@@ -1,6 +1,6 @@
 import { getAuth } from "firebase/auth";
 
-const API_BASE_URL = 'http://192.168.3.251:8080';
+const API_BASE_URL = 'http://192.168.3.249:8080';
 
 export const fetchTrips = async () => {
     try {

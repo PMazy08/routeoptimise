@@ -10,7 +10,7 @@ export default function StudentSidebar({ isOpen, onClose }) {
              bottom-0 sm:top-0 lg:left-64 lg:top-0 transition-transform"
     >
       <div className="h-full px-3 pb-4 overflow-y-auto flex flex-col">
-        <h2 className="text-lg font-bold">Students</h2>
+        <h2 className="text-lg font-bold mt-[10px]">Students</h2>
         {/* <button
           onClick={onClose}
           className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-700"

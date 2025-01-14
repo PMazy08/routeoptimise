@@ -1,4 +1,4 @@
-const Host = '192.168.3.251';
+const Host = '192.168.3.249';
 const Port = '8080';
 
 const fetchMapCenter = async (idToken) => {

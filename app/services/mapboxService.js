@@ -108,7 +108,7 @@ const drawRoute = async (map, coordinates, routeId, color) => {
 
 const fetchMarkers = async (idToken) => {
     try {
-        const response = await fetch('http://192.168.3.251:8080/api/students', {
+        const response = await fetch('http://192.168.3.249:8080/api/students', {
             headers: {
                 'Authorization': `Bearer ${idToken}`, // ส่ง token ใน headers
                 'Content-Type': 'application/json',

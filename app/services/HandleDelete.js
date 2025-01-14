@@ -12,7 +12,7 @@ const HandleDelete = async (id) => {
     console.log("JWT Token:", idToken);
 
     // เรียก API
-    const response = await fetch(`http://192.168.3.124:8080/api/students/${id}`, {
+    const response = await fetch(`http://192.168.3.249:8080/api/students/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${idToken}`,

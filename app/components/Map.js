@@ -8,7 +8,7 @@ import { subscribeAuthState } from "../services/authService";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-const Map = () => {
+const Map = ({ onMapLoaded }) => {
   const [user, setUser] = useState(null);
   const [idToken, setIdToken] = useState(""); // State สำหรับเก็บ token
 
@@ -75,12 +75,12 @@ const Map = () => {
       center: mapCenter,
       zoom: 12,
       attributionControl: false,
-        dragPan: true, // ให้เลื่อนแผนที่ได้
-        scrollZoom: true, // ปิดการซูมด้วยการเลื่อนเมาส์
-        boxZoom: false, // ปิดการซูมด้วยการเลือกกล่อง
-        dragRotate: false, // ปิดการหมุนแผนที่
-      
+      dragPan: true, // ให้เลื่อนแผนที่ได้
+      scrollZoom: true, // ปิดการซูมด้วยการเลื่อนเมาส์
+      boxZoom: false, // ปิดการซูมด้วยการเลือกกล่อง
+      dragRotate: false, // ปิดการหมุนแผนที่
     });
+
 
     map.flyTo({
       center: mapCenter, // ตำแหน่งที่ต้องการเลื่อน
@@ -97,6 +97,13 @@ const Map = () => {
     }
     mapRef.current = map;
 
+    // เมื่อโหลดเสร็จ
+    map.on("load", () => {
+      if (onMapLoaded) {
+        onMapLoaded(); // เรียกฟังก์ชันที่ส่งเข้ามาจาก Parent
+      }
+    });
+
     return () => map.remove(); // Cleanup เมื่อ component ถูกลบ
   }, [mapCenter, selectedStyle]);
 
@@ -110,8 +117,8 @@ const Map = () => {
       markers.forEach(({ latitude, longitude, first_name, last_name, age, gender, address, status }) => {
         const el = document.createElement('div');
         el.className = 'custom-marker';
-        el.style.width = '7px'; // ขนาดจุด
-        el.style.height = '7px';
+        el.style.width = '8px'; // ขนาดจุด
+        el.style.height = '8px';
         el.style.backgroundColor = '#07A1E8'; // สีของจุด
         // el.style.backgroundColor = status === 0 ? '#FFECA1' : '#58d68d'; // เปลี่ยนสีเป็นเทาถ้า status เป็น 0
         el.style.borderRadius = '50%'; // ทำให้เป็นวงกลม
@@ -131,8 +138,12 @@ const Map = () => {
           )
           .addTo(mapRef.current);
       });
+      
     }
+    
   }, [mapCenter, selectedStyle]);
+
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -207,10 +218,7 @@ useEffect(() => {
   return (
       <div className="h-screen w-full">
           {/* Map Container */}
-          <div
-              ref={mapContainerRef}
-              style={{ height: "100%", width: "100%" }} // ใช้ height และ width 100% เพื่อให้เต็มพื้นที่
-          />
+          <div ref={mapContainerRef} className="w-full h-full" />
       </div>
 
 
