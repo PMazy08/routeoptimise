@@ -79,60 +79,88 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
       fixed z-50 w-full sm:w-[500px] 
       h-[500px] sm:h-screen
       bg-gray-100 border-t sm:border-t-0 sm:border-r border-gray-300
-      bottom-0 sm:top-0 lg:left-64 lg:top-0
+      bottom-0 sm:top-0 lg:top-0
       transition-transform
     "
     >
-      <div className="h-full flex flex-col overflow-y-auto px-3 pb-0">
+      <div className="h-full flex flex-col px-3 pb-0">
+
+        {/* Sticky top */}
+        <div className="sticky top-0 bg-gray-100">
+          <div className="flex items-center justify-between mt-2 mb-2">
+            <h2 className="text-lg font-bold">Home To Schools</h2>
+            <button
+              onClick={onClose}
+              className="justify-items-center w-[30px] h-[30px] bg-red-500 text-black  rounded hover:bg-red-800"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                className="size-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
         {/* Header */}
         {/* <h2 className="text-lg font-bold mt-2">Home To Schools</h2> */}
 
 
-    <div className="p-4">
-      <h2 className="text-lg font-semibold mb-2">Point Stops</h2>
-      
-      {/* วนแสดง input ทีละแถว พร้อมปุ่มลบ */}
-      {fields.map((val, idx) => (
-        <div key={idx} className="flex items-center gap-2 mb-2">
-          <input
-            type="text"
-            value={val}
-            onChange={(e) => handleChange(idx, e.target.value)}
-            className="border border-gray-300 rounded px-2 py-1
+        <div className="overflow-y-auto">
+        <div className="p-4">
+          <h2 className="text-lg font-semibold mb-2">Point Stops</h2>
+
+          {/* วนแสดง input ทีละแถว พร้อมปุ่มลบ */}
+          {fields.map((val, idx) => (
+            <div key={idx} className="flex items-center gap-2 mb-2">
+              <input
+                type="text"
+                value={val}
+                onChange={(e) => handleChange(idx, e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1
                        focus:outline-none focus:ring-1 focus:ring-blue-500 
                        text-sm w-full"
-            placeholder={`Input ${idx + 1}`}
-          />
-          <button
-            onClick={() => removeInput(idx)}
-            className="bg-red-500 text-white px-2 py-1 rounded 
+                placeholder={`Input ${idx + 1}`}
+              />
+              <button
+                onClick={() => removeInput(idx)}
+                className="bg-red-500 text-white px-2 py-1 rounded 
                        hover:bg-red-600 focus:outline-none focus:ring-2
                        focus:ring-red-400 text-sm"
-          >
-            Remove
-          </button>
-        </div>
-      ))}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
 
-      {/* ปุ่ม Add */}
-      <button
-        onClick={addInput}
-        className="bg-blue-600 text-white px-3 py-2 rounded 
+          {/* ปุ่ม Add */}
+          <button
+            onClick={addInput}
+            className="bg-blue-600 text-white px-3 py-2 rounded 
                    hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
                    text-sm"
-      >
-        Add
-      </button>
+          >
+            Add
+          </button>
 
-      <button
-        onClick={clearAll}
-        className="bg-red-500 text-white px-3 py-2 rounded 
+          <button
+            onClick={clearAll}
+            className="bg-red-500 text-white px-3 py-2 rounded 
                    hover:red-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
                    text-sm"
-      >
-        Clear
-      </button>
-    </div>
+          >
+            Clear
+          </button>
+        </div>
 
 
 
@@ -236,6 +264,7 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
 
         {/* จุดสำคัญ: sticky bottom-0 */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle} from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -8,7 +8,7 @@ import { subscribeAuthState } from "../services/authService";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-const Map = ({ onMapLoaded }) => {
+const Map = forwardRef((props, ref) => {
   const [user, setUser] = useState(null);
   const [idToken, setIdToken] = useState(""); // State สำหรับเก็บ token
 
@@ -21,12 +21,24 @@ const Map = ({ onMapLoaded }) => {
 
   const [depotLat, setDepotLat] = useState();
   const [depotLng, setDepotLng] = useState();
-  const [numVehicles, setNumVehicles] = useState(10);
-  const [maxStopsPerVehicle, setMaxStopsPerVehicle] = useState(20);
-  const [maxTravelTime, setMaxTravelTime] = useState(150);
+  // const [numVehicles, setNumVehicles] = useState(10);
+  // const [maxStopsPerVehicle, setMaxStopsPerVehicle] = useState(20);
+  // const [maxTravelTime, setMaxTravelTime] = useState(150);
+
 
   const [routes, setRoutes] = useState([]); // เก็บข้อมูล routes
   const [routeColors, setRouteColors] = useState([]);
+
+  const [disdu, setdisdu] = useState([]);
+
+
+  // com อื่น ใช้ fun ได้
+  useImperativeHandle(ref, () => ({
+    handleSubmit,
+    handleReset,
+    handleDrawRoute,
+  }));
+
 
 
 
@@ -36,6 +48,7 @@ const Map = ({ onMapLoaded }) => {
     { name: "Satellite Streets", value: "mapbox://styles/mapbox/satellite-streets-v11" },
     { name: "Light", value: "mapbox://styles/mapbox/light-v10" }
   ];
+
 
   useEffect(() => {
     const unsubscribe = subscribeAuthState(setUser, setIdToken); // เรียกใช้ service
@@ -97,12 +110,12 @@ const Map = ({ onMapLoaded }) => {
     }
     mapRef.current = map;
 
-    // เมื่อโหลดเสร็จ
-    map.on("load", () => {
-      if (onMapLoaded) {
-        onMapLoaded(); // เรียกฟังก์ชันที่ส่งเข้ามาจาก Parent
-      }
-    });
+    // // เมื่อโหลดเสร็จ
+    // map.on("load", () => {
+    //   if (onMapLoaded) {
+    //     onMapLoaded(); // เรียกฟังก์ชันที่ส่งเข้ามาจาก Parent
+    //   }
+    // });
 
     return () => map.remove(); // Cleanup เมื่อ component ถูกลบ
   }, [mapCenter, selectedStyle]);
@@ -143,50 +156,95 @@ const Map = ({ onMapLoaded }) => {
     
   }, [mapCenter, selectedStyle]);
 
-  
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const distance = [];
+
+  const handleSubmit = async (num_bus, max_stops, max_time) => {
     const locations = markers.map((marker) => [parseFloat(marker.latitude), parseFloat(marker.longitude)]);
     const data = {
       depot: [parseFloat(depotLat), parseFloat(depotLng)],
-      num_vehicles: parseInt(numVehicles),
-      max_stops_per_vehicle: parseInt(maxStopsPerVehicle),
-      max_travel_time: parseInt(maxTravelTime) * 60,
+      num_vehicles: num_bus,
+      max_stops_per_vehicle: max_stops,
+      max_travel_time: max_time * 60, // แปลงเวลาเป็นวินาที
       locations: locations,
     };
   
-    handleClick(data);
-  };
+    // รีเซ็ตสถานะ
+    setRouteColors([]); 
+    setRoutes([]);
+    resetRoute(mapRef.current);
   
-  const handleClick = async (data) => { 
-    setRouteColors([]); // รีเซ็ตสีทั้งหมด
-    setRoutes([]); // รีเซ็ตเส้นทางทั้งหมด
-    resetRoute(mapRef.current); // ลบเส้นทางบนแผนที่ (ถ้ามีฟังก์ชัน resetRoute)
     setIsLoading(true); // เริ่มโหลด
+  
     try {
-      const result = await fetchRoutes(idToken, mapRef.current, data); // ส่ง data ไปยัง fetchRoutes
-      console.log(result);
-      
+      // เรียก fetchRoutes เพื่อคำนวณเส้นทาง
+      const result = await fetchRoutes(idToken, mapRef.current, data);
+  
+      // สร้างสีสำหรับแต่ละเส้นทาง
       const colors = result.map(() => getRandomHexColor());
+
+      // console.log("Add "+colors);
+      
       setRouteColors(colors);
       setRoutes(result);
-  
-      // ใช้ result แทน routes ในการวาด
-      result.forEach((route, index) => {
+
+      // // วาดเส้นทางบนแผนที่
+      // result.forEach((route, index) => {
+      //   const routeKey = `route ${index + 1}`;
+      //   const coordinates = route[routeKey];
+      //   if (coordinates) {
+      //     drawRoute(mapRef.current, coordinates, routeKey, colors[index], true)
+      //       .then((didu) => {
+      //         setdisdu(didu.distance)
+      //         console.log("----> " + didu.distance);
+      //         console.log("----> " + didu.duration);
+      //       })
+      //       .catch((error) => {
+      //         console.error("Error drawing route:", error);
+      //       });
+      //   }
+      // });
+      // // ส่งกลับ routes และ routeColors
+      // return { routes: result, routeColors: colors };
+
+      const distance = [];
+      const duration = [];
+      
+      // Create an array of Promises
+      const drawPromises = result.map(async (route, index) => {
         const routeKey = `route ${index + 1}`;
         const coordinates = route[routeKey];
+
+        console.log("routeKey in MAP :" + routeKey);
+        
         if (coordinates) {
-          drawRoute(mapRef.current, coordinates, routeKey, colors[index], true); // ใช้ colors ที่สร้างมา
+          try {
+            const didu = await drawRoute(mapRef.current, coordinates, routeKey, colors[index], true);
+            distance.push(didu.distance); // Push distance when resolved
+            duration.push(didu.duration); // Push duration when resolved
+            return didu;
+          } catch (error) {
+            console.error("Error drawing route:", error);
+          }
         }
+        // return Promise.resolve(); // Return a resolved Promise if coordinates are missing
+        return null;
       });
+      
+      // Wait for all Promises to complete
+      const diduArray = await Promise.all(drawPromises);
   
+      return { routes: result, routeColors: colors, routeDistance: distance, routeDuration: duration, Didu: JSON.stringify(diduArray, null, 2)};
+      
     } catch (error) {
       console.error("Error drawing routes:", error);
+      throw error; // ส่งข้อผิดพลาดออกไป
     } finally {
-      setIsLoading(false); // สิ้นสุดโหลด
+      setIsLoading(false); // สิ้นสุดการโหลด
     }
   };
+  
+  
 
 
   const handleReset = () => {
@@ -212,6 +270,20 @@ useEffect(() => {
   }
   return () => clearInterval(timer); // ล้าง timer เมื่อ component ถูก unmount
 }, [isLoading]);
+
+
+
+const handleDrawRoute = async(route, routeKey, routeColor) => {
+  // console.log(route);
+  // console.log(routeKey);
+  // console.log(routeColor);
+  const coordinates = route[routeKey];
+  if (coordinates) {
+    const result = await drawRoute(mapRef.current, coordinates, routeKey, routeColor, true);
+      // console.log(".....> "+result);
+      return result;
+  }
+};
   
   
 // -------------------------------------------------------------------------
@@ -220,319 +292,7 @@ useEffect(() => {
           {/* Map Container */}
           <div ref={mapContainerRef} className="w-full h-full" />
       </div>
-
-
-    // <div>
-    //   <select onChange={(e) => setSelectedStyle(e.target.value)} value={selectedStyle}>
-    //     {styles.map((style) => (
-    //       <option key={style.value} value={style.value}>
-    //         {style.name}
-    //       </option>
-    //     ))}
-    //   </select>
-
-    //   <div
-    //     ref={mapContainerRef}
-    //     style={{ height: "600px", width: "100%" }}
-    //   />
-
-
-    // <button
-    //   onClick={() => handleReset()}
-    //   style={{
-    //     padding: "5px 10px",
-    //     backgroundColor: "red",
-    //     color: "white",
-    //     border: "none",
-    //     borderRadius: "4px",
-    //     fontSize: "12px",
-    //     cursor: "pointer",
-    //     margin: '10px'
-    //   }}
-    // >
-    //   Reset Route
-    // </button>
-
-    // <button
-    //   style={{
-    //     padding: "5px 10px",
-    //     backgroundColor: 'skyblue',
-    //     color: "white",
-    //     border: "none",
-    //     borderRadius: "4px",
-    //     fontSize: "12px",
-    //     cursor: "pointer",
-    //     margin: '10px'
-    //   }}
-    // >
-    //   Save
-    // </button>
-
-    // <hr></hr> 
-
-    //    <div style={{marginBottom :"10px" }}>
-    //     <h3 style={{fontWeight: 'bolder', marginLeft: '10px'}}>Routes</h3>
-    //     {routes.length > 0 ? (
-    //       <>
-         
-    //         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px",}}>
-             
-    //           <button
-    //             onClick={() => {
-    //               resetRoute(mapRef.current),
-    //               routes.forEach((route, index) => {
-    //                 const routeKey = `route ${index + 1}`;
-    //                 const coordinates = route[routeKey];
-    //                 if (coordinates) {
-    //                   drawRoute(mapRef.current, coordinates, routeKey, routeColors[index], true);
-    //                 }
-    //               });
-    //             }}
-
-    //             style={{
-    //               padding: "5px",
-    //               backgroundColor: "green",
-    //               color: "white",
-    //               border: "none",
-    //               borderRadius: "4px",
-    //               fontSize: "12px",
-    //               cursor: "pointer",
-    //               margin: '10px 5px'
-    //             }}
-                
-    //           >
-    //             All Routes
-    //           </button>
-
-       
-    //           {routes.map((route, index) => {
-    //             const routeKey = `route ${index + 1}`;
-    //             return (
-    //               <button
-    //                 key={routeKey}
-    //                 onClick={() => {
-    //                   resetRoute(mapRef.current);
-    //                   const coordinates = route[routeKey];       
-    //                   if (coordinates) {
-    //                     drawRoute(mapRef.current, coordinates, routeKey, routeColors[index], true);
-    //                   }
-    //                 }}
-
-    //                 style={{
-    //                   padding: "5px 10px",
-    //                   backgroundColor: routeColors[index],
-    //                   color: "white",
-    //                   border: "none",
-    //                   borderRadius: "4px",
-    //                   fontSize: "12px",
-    //                   cursor: "pointer",
-    //                   margin: '10px 5px'
-    //                 }}
-    //               >
-    //                 {routeKey}
-    //               </button>
-    //             );
-    //           })}
-    //         </div>
-    //       </>
-    //     ) : (
-    //       isLoading ? (
-    //         <p style={{ color: "blue", fontWeight: "bold", margin:'5px 10px' }}>Finding Routes... {elapsedTime}(s)</p>
-    //       ) : null
-    //     )}
-
-    //     <hr></hr>
-    //   </div>
-
-
-
-    
-    //   <form
-    //     onSubmit={handleSubmit}
-    //     style={{
-    //       display: "flex",
-    //       alignItems: "center",
-    //       gap: "10px", // ระยะห่างระหว่างแต่ละช่อง
-    //       padding: "10px",
-    //       backgroundColor: "#f9f9f9",
-    //       borderRadius: "8px",
-    //       boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-    //       margin: '10px'
-    //     }}
-    //   >
-
-    //     <p style={{fontWeight: 'bold', width: '100px'}}>Home To Schools</p>
-
-    //     <label style={{ display: "flex", flexDirection: "column", fontSize: "12px" }}>
-    //       Bus:
-    //       <input
-    //         type="number"
-    //         value={numVehicles}
-    //         onChange={(e) => setNumVehicles(e.target.value)}
-    //         min="1"
-    //         required
-    //         style={{
-    //           width: "80px",
-    //           padding: "5px",
-    //           marginTop: "3px",
-    //           border: "1px solid #ccc",
-    //           borderRadius: "4px",
-    //           fontSize: "12px",
-    //         }}
-    //       />
-    //     </label>
-
-    //     <label style={{ display: "flex", flexDirection: "column", fontSize: "12px" }}>
-    //       Max Capacity:
-    //       <input
-    //         type="number"
-    //         value={maxStopsPerVehicle}
-    //         onChange={(e) => setMaxStopsPerVehicle(e.target.value)}
-    //         min="1"
-    //         required
-    //         style={{
-    //           width: "80px",
-    //           padding: "5px",
-    //           marginTop: "3px",
-    //           border: "1px solid #ccc",
-    //           borderRadius: "4px",
-    //           fontSize: "12px",
-    //         }}
-    //       />
-    //     </label>
-
-    //     <label style={{ display: "flex", flexDirection: "column", fontSize: "12px" }}>
-    //       Max Time (min):
-    //       <input
-    //         type="number"
-    //         value={maxTravelTime}
-    //         onChange={(e) => setMaxTravelTime(e.target.value)}
-    //         min="1"
-    //         required
-    //         style={{
-    //           width: "80px",
-    //           padding: "5px",
-    //           marginTop: "3px",
-    //           border: "1px solid #ccc",
-    //           borderRadius: "4px",
-    //           fontSize: "12px",
-    //         }}
-    //       />
-    //     </label>
-
-    //     <button
-    //       type="submit"
-    //       style={{
-    //         padding: "5px 10px",
-    //         backgroundColor: "#4CAF50",
-    //         color: "white",
-    //         border: "none",
-    //         borderRadius: "4px",
-    //         fontSize: "12px",
-    //         cursor: "pointer",
-    //       }}
-    //       disabled={isLoading}
-    //     >
-    //       {isLoading ? "Calculating..." : "Optimize Route"}
-    //     </button>
-    //   </form>
-
-
-
-    //   <form
-    //     onSubmit={handleSubmit}
-    //     style={{
-    //       display: "flex",
-    //       alignItems: "center",
-    //       gap: "10px", // ระยะห่างระหว่างแต่ละช่อง
-    //       padding: "10px",
-    //       backgroundColor: "#f9f9f9",
-    //       borderRadius: "8px",
-    //       boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-    //       margin: '10px'
-    //     }}
-    //   >
-
-    //     <p style={{fontWeight: 'bold', width: '100px'}}>But To Schools</p>
-
-    //     <label style={{ display: "flex", flexDirection: "column", fontSize: "12px" }}>
-    //       Vehicles:
-    //       <input
-    //         type="number"
-    //         value={numVehicles}
-    //         onChange={(e) => setNumVehicles(e.target.value)}
-    //         min="1"
-    //         required
-    //         style={{
-    //           width: "80px",
-    //           padding: "5px",
-    //           marginTop: "3px",
-    //           border: "1px solid #ccc",
-    //           borderRadius: "4px",
-    //           fontSize: "12px",
-    //         }}
-    //       />
-    //     </label>
-
-    //     <label style={{ display: "flex", flexDirection: "column", fontSize: "12px" }}>
-    //       Max Stops:
-    //       <input
-    //         type="number"
-    //         value={maxStopsPerVehicle}
-    //         onChange={(e) => setMaxStopsPerVehicle(e.target.value)}
-    //         min="1"
-    //         required
-    //         style={{
-    //           width: "80px",
-    //           padding: "5px",
-    //           marginTop: "3px",
-    //           border: "1px solid #ccc",
-    //           borderRadius: "4px",
-    //           fontSize: "12px",
-    //         }}
-    //       />
-    //     </label>
-
-    //     <label style={{ display: "flex", flexDirection: "column", fontSize: "12px" }}>
-    //       Max Time (min):
-    //       <input
-    //         type="number"
-    //         value={maxTravelTime}
-    //         onChange={(e) => setMaxTravelTime(e.target.value)}
-    //         min="1"
-    //         required
-    //         style={{
-    //           width: "80px",
-    //           padding: "5px",
-    //           marginTop: "3px",
-    //           border: "1px solid #ccc",
-    //           borderRadius: "4px",
-    //           fontSize: "12px",
-    //         }}
-    //       />
-    //     </label>
-
-    //     <button
-    //       type="submit"
-    //       style={{
-    //         padding: "5px 10px",
-    //         backgroundColor: "#4CAF50",
-    //         color: "white",
-    //         border: "none",
-    //         borderRadius: "4px",
-    //         fontSize: "12px",
-    //         cursor: "pointer",
-    //       }}
-    //       disabled={isLoading}
-    //     >
-    //       {isLoading ? "Calculating..." : "Optimize Route"}
-    //     </button>
-    //   </form>
-
-
-
-    // </div>
   );
-};
+});
 
 export default Map;

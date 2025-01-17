@@ -1,13 +1,35 @@
-import axios from 'axios';
+import configService from "./configService";
 
-const API_BASE_URL = 'http://192.168.3.249:8080/api';
 
-export const fetchPageData = async (page) => {
+// export const fetchPageData = async (page) => {
+//     try {
+//         const response = await axios.get(`${configService.baseURL}/students/page/${page}`);
+//         return response.data;
+//     } catch (error) {
+//         console.error('Error Page data', error);
+//         throw error;
+//     }
+// }
+
+const fetchStudentAll = async (idToken) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/students/page/${page}`);
-        return response.data;
+      const response = await fetch(`${configService.baseURL}/api/students`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`, // ส่ง token ใน headers
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        return data; // ส่งข้อมูลกลับไป
+      } else {
+        throw new Error(`Failed to fetch data from API: ${response.status}`);
+      }
     } catch (error) {
-        console.error('Error Page data', error);
-        throw error;
+      console.error("Error fetching marker data: ", error);
+      throw error; // ขว้างข้อผิดพลาดออกไป
     }
-}
+  };
+
+  export {fetchStudentAll };

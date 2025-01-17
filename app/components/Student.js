@@ -7,9 +7,34 @@ export default function StudentSidebar({ isOpen, onClose }) {
     <aside
       id="additional-sidebar"
       className="fixed z-50 w-full sm:w-[1000px] h-[500px] sm:h-screen bg-gray-100 border-t sm:border-t-0 sm:border-r border-gray-300 
-             bottom-0 sm:top-0 lg:left-64 lg:top-0 transition-transform"
+             bottom-0 sm:top-0 lg:top-0 transition-transform"
     >
       <div className="h-full px-3 pb-4 overflow-y-auto flex flex-col">
+
+      <div className="flex items-center justify-between mt-2">
+          <h2 className="text-lg font-bold">Home To Schools</h2>
+
+          <button
+            onClick={onClose}
+            className="justify-items-center w-[30px] h-[30px] bg-red-500 text-black  rounded hover:bg-red-800"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="size-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18 18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        
         <h2 className="text-lg font-bold mt-[10px]">Students</h2>
         {/* <button
           onClick={onClose}

@@ -1,6 +1,5 @@
 import { getAuth } from "firebase/auth";
-
-const API_BASE_URL = 'http://192.168.3.249:8080';
+import configService from "./configService";
 
 export const fetchTrips = async () => {
     try {
@@ -13,7 +12,7 @@ export const fetchTrips = async () => {
         const idToken = await user.getIdToken();
         console.log("JWT Token:", idToken);
 
-        const res = await fetch(`${API_BASE_URL}/api/trips`, {
+        const res = await fetch(`${configService.baseURL}/api/trips`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${idToken}`,

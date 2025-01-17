@@ -1,9 +1,8 @@
-const Host = '192.168.3.249';
-const Port = '8080';
+import configService from "./configService";
 
 const fetchMapCenter = async (idToken) => {
     try {
-      const response = await fetch(`http://${Host}:${Port}/api/schools`, {
+      const response = await fetch(`${configService.baseURL}/api/schools`, {
         headers: {
           'Authorization': `Bearer ${idToken}`, // ส่ง token ใน headers
           'Content-Type': 'application/json',

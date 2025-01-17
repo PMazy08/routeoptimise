@@ -1,39 +1,47 @@
 "use client";
-
-import Image from "next/image";
-import { useState } from "react";
-
+import { useState, useRef, useEffect } from "react";
 import Map from "../../components/Map";
+import { useRouter } from "next/navigation";
+
+// auth
+import app from "../../../config.js";
+import { getAuth, signOut, onAuthStateChanged, sendPasswordResetEmail } from "firebase/auth";
 
 
-
-// componets
+// Componets
 import HomeToSchools from "../../components/HomToSchool";
 import ButToSchools from "../../components/BusToSchool";
 import HistoryRoute from "../../components/HistoryRoute";
-import Student from "../../components/Route";
+import Student from "../../components/Student";
+import Route from "../../components/Route";
+
+// Modals
+import PasswordResetModal from "../../modals/PasswordResetModal"; // นำเข้า Component ใหม่
+
 
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false); // จัดการสถานะของ Sidebar
+
+  const router = useRouter();
+  const auth = getAuth(app);
+  const [user, setUser] = useState(null);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeComponent, setActiveComponent] = useState(null);
   const [activeLink, setActiveLink] = useState("");
+  const mapRef = useRef();
 
-  const toggleComponent = (componentName) => {
-    setActiveComponent((prev) =>
-      prev === componentName ? null : componentName
-    );
-    setActiveLink(componentName); // ถ้าค่าปัจจุบันตรงกับคอมโพเนนต์ที่เลือก ให้ตั้งค่าเป็น null
-  };
 
-  
+  const [emailForPasswordReset, setEmailForPasswordReset] = useState(""); // State for email input
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false); // To control reset modal visibility
+
+
+
 
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
   };
-
-
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
     setIsDropdownOpen(false)
@@ -44,14 +52,132 @@ export default function Sidebar() {
     }
   };
 
+
+  // const toggleComponent = (componentName) => {
+  //   setActiveComponent((prev) =>
+  //     prev === componentName ? null : componentName
+  //   );
+  //   setActiveLink(componentName); // ถ้าค่าปัจจุบันตรงกับคอมโพเนนต์ที่เลือก ให้ตั้งค่าเป็น null
+  // };
+
+
+  // const renderComponent = () => {
+  //   const commonProps = {
+  //     isOpen: true,
+  //     openComponent: (componentName) => setActiveComponent(componentName),
+  //     onClose: () => setActiveComponent(null),
+  //   };
+  
+  //   switch (activeComponent) {
+  //     case "HomeToSchools":
+  //       return <HomeToSchools mapRef={mapRef} {...commonProps} />;
+  //     case "ButToSchools":
+  //       return <ButToSchools {...commonProps} />;
+  //     case "HistoryRoute":
+  //       return <HistoryRoute {...commonProps} />;
+  //     case "Student":
+  //       return <Student {...commonProps} />;
+  //     case "Route":
+  //       return <Route mapRef={mapRef} {...commonProps}/>;
+  //     default:
+  //       return null;
+  //   }
+  // };
+
+
+  const toggleComponent = (componentName, props = {}) => {
+    setActiveComponent((prev) =>
+      prev?.name === componentName ? null : { name: componentName, props }
+    );
+    setActiveLink(componentName);
+  };
+  
+  // ต้องประกาศ commonProps ก่อน renderComponent
+  const commonProps = {
+    isOpen: true,
+    openComponent: toggleComponent,
+    onClose: () => {setActiveComponent(null);
+      setIsOpen(true);
+    },
+  };
+  
+  const renderComponent = () => {
+    if (!activeComponent) return null;
+  
+    const { name, props } = activeComponent;
+  
+    switch (name) {
+      case "HomeToSchools":
+        return <HomeToSchools mapRef={mapRef} {...commonProps} />;
+      case "ButToSchools":
+        return <ButToSchools {...commonProps} />;
+      case "HistoryRoute":
+        return <HistoryRoute {...commonProps} />;
+      case "Student":
+        return <Student {...commonProps} />;
+      case "Route":
+        return <Route mapRef={mapRef} {...commonProps} {...props} />;
+      case "DetailRoute":
+        return <DetailRoute {...commonProps} />;
+      default:
+        return null;
+    }
+  };
+
+
+
+  // Auth-----------------------------------------------
+  // chk
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+        router.push("/"); // Redirect if not logged in
+      }
+    });
+    return () => unsubscribe();
+  }, [auth, router]);
+  // Out
+  const handleSignOut = async () => {
+    const confirmSignOut = window.confirm("Are you sure you want to sign out?");
+    if (!confirmSignOut) {
+      return; // หยุดการทำงานถ้าผู้ใช้ยกเลิก
+    }
+  
+    try {
+      await signOut(auth);
+      router.push("/"); // Redirect to the home page after sign out
+    } catch (error) {
+      console.error("Error signing out:", error.message);
+      alert(`Error signing out: ${error.message}`);
+    }
+  };
+  // Reset
+  const handlePasswordResetRequest = async (e) => {
+    e.preventDefault();
+    if (!emailForPasswordReset) {
+      alert("Please enter your email address.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, emailForPasswordReset);
+      alert("Password reset email sent! Please check your inbox.");
+      setIsResetModalOpen(false); // Close the modal after sending the reset email
+    } catch (error) {
+      alert("Error sending password reset email: " + error.message);
+    }
+  };
+
+
   return (
     <>
-
       <button
         onClick={toggleSidebar}
         aria-controls="logo-sidebar"
         type="button"
-        className="fixed top-4 left-4 z-50 inline-flex items-center p-3 text-sm text-gray-500 bg-white rounded-2xl sm:hidden"
+        className="fixed top-4 left-4 z-50 inline-flex items-center p-3 text-sm text-gray-500 bg-white rounded-2xl"
       >
         {/* <span className="sr-only">Open sidebar</span> */}
         <svg
@@ -70,27 +196,27 @@ export default function Sidebar() {
       </button>
 
 
+      {/* Sidebar */}
       <div
         id="hs-sidebar-footer"
-        className={`hs-overlay fixed top-0 transition-transform ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-        w-64 h-screen z-[60] sm:translate-x-0 bg-white`}  // ใช้ lg:block เพื่อให้แสดงในจอใหญ่
-        role="dialog"
-        tabIndex="-1"
-        aria-label="Sidebar"
+        className={`hs-overlay fixed transition-transform ${isOpen ? "sm:translate-x-0" : "-translate-x-full"
+          } h-screen z-[60] bg-white`}
       >
-        <div className="relative flex flex-col h-screen max-h-full w-full">
+        <div className="relative flex flex-col h-screen max-h-full w-64">
           <header className="p-4 flex justify-between items-center gap-x-2 ">
             <a
               className="flex-none font-semibold text-xl text-black focus:outline-none focus:opacity-80 dark:text-white"
               aria-label="Brand"
             >
-              Route Optimize Bro!!!
+              RouteOptimize
             </a>
-            <div className="sm:hidden">
+            <div className="">
               <button
                 type="button"
-                className="flex justify-center items-center gap-x-3 size-6 bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 rounded-full focus:outline-none focus:bg-gray-100 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:hover:text-neutral-200 dark:focus:text-neutral-200"
-                onClick={toggleSidebar}
+                className="flex justify-center items-center gap-x-3 size-6 bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 rounded-[7px] focus:outline-none focus:bg-gray-100 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:hover:text-neutral-200 dark:focus:text-neutral-200"
+                onClick={() => {
+                  toggleSidebar();
+                }}
               >
                 <svg
                   className="shrink-0 size-4"
@@ -107,7 +233,7 @@ export default function Sidebar() {
                   <path d="M18 6 6 18" />
                   <path d="m6 6 12 12" />
                 </svg>
-                <span className="sr-only">Close</span>
+                {/* <span className="sr-only">Close</span> */}
               </button>
             </div>
           </header>
@@ -117,8 +243,10 @@ export default function Sidebar() {
               <ul className="space-y-1">
                 <li>
                   <a
-                    onClick={() => {toggleComponent('HomeToSchools');
+                    onClick={() => {
+                      toggleComponent('HomeToSchools');
                       toggleNav();
+                      setIsOpen(false); // ปิด Sidebar
                     }}
                     className={`cursor-pointer flex items-center p-2 rounded-lg
                       text-gray-900 dark:text-white
@@ -155,8 +283,10 @@ export default function Sidebar() {
 
                 <li>
                   <a
-                    onClick={() => {toggleComponent('ButToSchools');
+                    onClick={() => {
+                      toggleComponent('ButToSchools');
                       toggleNav();
+                      setIsOpen(false); // ปิด Sidebar
                     }}
                     className={`cursor-pointer flex items-center p-2 rounded-lg
                       text-gray-900 dark:text-white
@@ -193,8 +323,10 @@ export default function Sidebar() {
 
                 <li>
                   <a
-                    onClick={() => {toggleComponent('HistoryRoute');
+                    onClick={() => {
+                      toggleComponent('HistoryRoute');
                       toggleNav();
+                      setIsOpen(false); // ปิด Sidebar
                     }}
                     className={`cursor-pointer flex items-center p-2 rounded-lg
                       text-gray-900 dark:text-white
@@ -230,8 +362,10 @@ export default function Sidebar() {
 
                 <li>
                   <a
-                    onClick={() => {toggleComponent('Student');
+                    onClick={() => {
+                      toggleComponent('Student');
                       toggleNav();
+                      setIsOpen(false); // ปิด Sidebar
                     }}
                     className={`cursor-pointer flex items-center p-2 rounded-lg
                       text-gray-900 dark:text-white
@@ -270,56 +404,64 @@ export default function Sidebar() {
 
           <footer className="mt-auto p-2 border-t border-gray-200 dark:border-neutral-700">
             <div className="relative w-full inline-flex">
-            <button
-              onClick={toggleDropdown}
-              id="hs-sidebar-footer-example-with-dropdown"
-              type="button"
-              className="w-full inline-flex shrink-0 items-center gap-x-2 p-2 text-start text-sm text-gray-800 rounded-md hover:bg-gray-100 focus:outline-none focus:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
-            >
-              <svg
-                className="size-4"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <button
+                onClick={toggleDropdown}
+                id="hs-sidebar-footer-example-with-dropdown"
+                type="button"
+                className="justify-between w-full inline-flex shrink-0 items-center gap-x-2 p-2 text-start text-sm text-gray-800 rounded-md hover:bg-gray-100 focus:outline-none focus:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700"
               >
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
-                <path d="M4 20v-2c0-2.21 3.58-4 8-4s8 1.79 8 4v2" />
-              </svg>
+                {/* ไอคอนด้านซ้าย */}
+                <svg
+                  className="flex-shrink-0 size-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
 
-              <span className="truncate">Mia Hudson</span>
-              
-              <svg
-                className="shrink-0 size-3.5 ms-auto"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m7 15 5 5 5-5" />
-                <path d="m7 9 5-5 5 5" />
-              </svg>
-            </button>
+                {/* ข้อความ */}
+                <span
+                  className="truncate flex-shrink-0"
+                  style={{ minWidth: "150px", maxWidth: "150px", overflow: "hidden" }}
+                >
+                  {user && user.email ? user.email : " "}
+                </span>
+
+                {/* ไอคอนด้านขวา */}
+                <svg
+                  className="shrink-0 size-3.5 ms-auto"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m7 15 5 5 5-5" />
+                  <path d="m7 9 5-5 5 5" />
+                </svg>
+              </button>
+
             </div>
           </footer>
 
           {isDropdownOpen && (
-            <div className="absolute right-2 bottom-[54px] z-50 w-60 bg-white divide-y divide-gray-100 rounded shadow dark:bg-gray-700 dark:divide-gray-600">
+            <div className="absolute bottom-[54px] z-50 w-full bg-white divide-y divide-gray-100 rounded shadow dark:bg-gray-700 dark:divide-gray-600">
               <div className="p-1">
-                <a className="flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800">
+                <a onClick={() => {setIsResetModalOpen(true); setIsOpen(!isOpen);}} className="flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800">
                   Reser Password
                 </a>
-                <a className="flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800">
+                <a onClick={handleSignOut} className="flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:bg-neutral-800">
                   Sign out
                 </a>
               </div>
@@ -329,11 +471,9 @@ export default function Sidebar() {
         </div>
       </div>
       
-
-
-      {/* Additional Sidebar */}
+      {/* Additional Sidebar
       {activeComponent === 'HomeToSchools' && (
-        <HomeToSchools isOpen={true} onClose={() => setActiveComponent(null)} />
+        <HomeToSchools isOpen={true} openComponent={(componentName) => setActiveComponent(componentName)} />
       )}
       {activeComponent === 'ButToSchools' && (
         <ButToSchools isOpen={true} onClose={() => setActiveComponent(null)} />
@@ -344,15 +484,30 @@ export default function Sidebar() {
       {activeComponent === 'Student' && (
         <Student isOpen={true} onClose={() => setActiveComponent(null)} />
       )}
-      
 
+      {activeComponent === 'Route' && (
+        <Route isOpen={true} openComponent={(componentName) => setActiveComponent(componentName)} />
+      )} */}
+
+      {/* Render the active component */}
+      {renderComponent()}
+      
       {/* Show Map */}
-      <div className="ml-0 sm:ml-64">
+      {/* ml-0 sm:ml-0 sm:mr-0 */}
+      <div className="">
           <div className="w-full h-full">
-            <Map />
+            <Map ref={mapRef} />
           </div>
       </div>
 
+      {/* ใช้งาน Password Reset Modal */}
+      <PasswordResetModal
+        isOpen={isResetModalOpen}
+        email={emailForPasswordReset}
+        setEmail={setEmailForPasswordReset}
+        handlePasswordResetRequest={handlePasswordResetRequest}
+        closeModal={() => setIsResetModalOpen(false)}
+      />
 
     </>
   );
