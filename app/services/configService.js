@@ -1,4 +1,4 @@
-const ip = '192.168.3.250';
+const ip = '192.168.3.125';
 const port = '8080';
 const portOrTools = '5000';
 

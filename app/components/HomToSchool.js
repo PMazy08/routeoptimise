@@ -137,7 +137,7 @@ const findingRoute = async () => {
       className="
         fixed z-50 w-full sm:w-[500px] 
         h-[450px] sm:h-screen
-        bg-gray-100 border-t sm:border-t-0 sm:border-r border-gray-300
+        bg-white border-t sm:border-t-0 sm:border-r border-gray-300
         bottom-0 sm:top-0  lg:top-0
         transition-transform
       "
@@ -148,10 +148,10 @@ const findingRoute = async () => {
 
 
         {/* Sticky top */}
-        <div className="sticky top-0 bg-gray-100">
+        <div className="sticky top-0 bg-white">
           <div className="flex items-center justify-between mt-2 mb-2">
             <h2 className="text-lg font-bold">Home To Schools</h2>
-            <button
+            {/* <button
               onClick={onClose}
               className="justify-items-center w-[30px] h-[30px] bg-red-500 text-black  rounded hover:bg-red-800"
             >
@@ -169,7 +169,30 @@ const findingRoute = async () => {
                   d="M6 18 18 6M6 6l12 12"
                 />
               </svg>
-            </button>
+            </button> */}
+
+            <button
+                type="button"
+                className="flex justify-center items-center gap-x-3 size-6 bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 rounded-[7px] focus:outline-none focus:bg-gray-100 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:hover:text-neutral-200 dark:focus:text-neutral-200"
+                onClick={onClose}
+              >
+                <svg
+                  className="shrink-0 size-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+                {/* <span className="sr-only">Close</span> */}
+              </button>
           </div>
         </div>
 
@@ -324,7 +347,7 @@ const findingRoute = async () => {
         {isLoading && <FindingOverlay />}
 
         {/* ticky bottom */}
-        <div className="mt-auto sticky bottom-0 left-0 right-0 bg-gray-100 border-t pt-2 pb-[20px]">
+        <div className="mt-auto sticky bottom-0 left-0 right-0 bg-white border-t pt-2 pb-[20px]">
           <button
             onClick={() => {
               findingRoute();

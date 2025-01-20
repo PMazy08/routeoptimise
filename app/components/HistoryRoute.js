@@ -1,122 +1,40 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect} from "react";
+import { fetchTrips } from "../services/tripService";
+import { subscribeAuthState } from "../services/authService";
 
 export default function HistoryRouteSidebar({ isOpen, onClose }) {
   if (!isOpen) return null; // ถ้า Sidebar ไม่เปิด ให้คืนค่า null
 
-  // Data for the history routes
-  const routes = [
-    {
-      date: "Jan 13, 2025",
-      students: 140,
-      type: "Home To Schools",
-      typeColor: "text-green-600",
-    },
-    {
-      date: "Jan 9, 2025",
-      students: 139,
-      type: "Bus To Schools",
-      typeColor: "text-red-600",
-    },
-    {
-      date: "Jan 1, 2025",
-      students: 120,
-      type: "Home To Schools",
-      typeColor: "text-yellow-600",
-    },
-    {
-      date: "Jan 13, 2025",
-      students: 140,
-      type: "Home To Schools",
-      typeColor: "text-green-600",
-    },
-    {
-      date: "Jan 9, 2025",
-      students: 139,
-      type: "Bus To Schools",
-      typeColor: "text-red-600",
-    },
-    {
-      date: "Jan 1, 2025",
-      students: 120,
-      type: "Home To Schools",
-      typeColor: "text-yellow-600",
-    },
-    // Add more items here for testing scroll
-    {
-      date: "Feb 5, 2025",
-      students: 150,
-      type: "Home To Schools",
-      typeColor: "text-green-600",
-    },
-    {
-      date: "Feb 6, 2025",
-      students: 130,
-      type: "Bus To Schools",
-      typeColor: "text-red-600",
-    },
-    {
-      date: "Feb 7, 2025",
-      students: 125,
-      type: "Home To Schools",
-      typeColor: "text-yellow-600",
-    },
-    {
-      date: "Jan 13, 2025",
-      students: 140,
-      type: "Home To Schools",
-      typeColor: "text-green-600",
-    },
-    {
-      date: "Jan 9, 2025",
-      students: 139,
-      type: "Bus To Schools",
-      typeColor: "text-red-600",
-    },
-    {
-      date: "Jan 1, 2025",
-      students: 120,
-      type: "Home To Schools",
-      typeColor: "text-yellow-600",
-    },
-    {
-      date: "Jan 13, 2025",
-      students: 140,
-      type: "Home To Schools",
-      typeColor: "text-green-600",
-    },
-    {
-      date: "Jan 9, 2025",
-      students: 139,
-      type: "Bus To Schools",
-      typeColor: "text-red-600",
-    },
-    {
-      date: "Jan 1, 2025",
-      students: 120,
-      type: "Home To Schools",
-      typeColor: "text-yellow-600",
-    },
-    // Add more items here for testing scroll
-    {
-      date: "Feb 5, 2025",
-      students: 150,
-      type: "Home To Schools",
-      typeColor: "text-green-600",
-    },
-    {
-      date: "Feb 6, 2025",
-      students: 130,
-      type: "Bus To Schools",
-      typeColor: "text-red-600",
-    },
-    {
-      date: "Feb 7, 2025",
-      students: 125,
-      type: "Home To Schools",
-      typeColor: "text-yellow-600",
-    },
-  ];
+  const [user, setUser] = useState(null);
+  const [idToken, setIdToken] = useState(""); // State สำหรับเก็บ token
+  const [trips, setTrips] = useState([]);
+
+
+  useEffect(() => {
+    const unsubscribe = subscribeAuthState(setUser, setIdToken); // เรียกใช้ service
+    return () => unsubscribe(); // เมื่อ component ถูกลบออก, ยกเลิกการ subscribe
+  }, []); // ใช้ [] เพื่อให้เพียงแค่ครั้งแรกที่ mount
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (idToken) {
+          const data = await fetchTrips(idToken); // Call your service
+          setTrips(data);
+          console.log(data);
+          
+        }
+      } catch (error) {
+        console.error("Error fetching marker data:", error);
+      }
+    };
+  
+    fetchData(); // Call the async function
+  }, [idToken]);
+  
+
+
 
   return (
     <aside
@@ -149,32 +67,41 @@ export default function HistoryRouteSidebar({ isOpen, onClose }) {
         </div>
 
         <ul className="bg-white shadow overflow-y-auto sm:rounded-md max-w-lg mx-lg m-2 max-h-lg">
-          {routes.map((route, index) => (
+          {trips.map((trip, index) => (
             <li
               key={index}
-              className={`cursor-pointer border-t border-gray-200 hover:bg-gray-100 transition-all ${route.typeColor}`}
+              className={`cursor-pointer border-t border-gray-200 hover:bg-gray-100 transition-all `}
             >
               <div className="px-4 py-5 sm:px-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    {route.date}
+                    {new Intl.DateTimeFormat('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true, // เปิด 12 ชั่วโมง
+                    }).format(new Date(trip.dataTime))}
                   </h3>
                   <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                    Students: {route.students}
+                    Students: 
                   </p>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-500">
                     Type:{" "}
-                    <span className={`text-sm font-medium ${route.typeColor}`}>
-                      {route.type}
+                    <span
+                      className={`text-sm font-medium ${trip.types === "Home To School" ? "text-yellow-600" : "text-red-600"
+                        }`}
+                    >
+                      {trip.types}
                     </span>
                   </p>
                   <a
-                    href="#"
                     className="font-medium text-indigo-600 hover:text-indigo-500"
                   >
-                    Edit
+                    View
                   </a>
                 </div>
               </div>

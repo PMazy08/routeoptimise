@@ -42,7 +42,7 @@ export default function DetailRouteSidebar({ route, routeIndex, color, distance,
 
         <div className="mb-[5px] ">
           <div className="flex mt-5 items-center">
-          <div style={{ width: '25px' , height:'25px', backgroundColor: color, borderRadius: '3px', marginRight: '5px' }}>
+          <div style={{ width: '25px' , height:'25px', backgroundColor: color, borderRadius: '3px', marginRight: '5px'}}>
           </div>
             <p>
               <strong>Route:</strong> {routeIndex.replace("route ", "")}
@@ -71,7 +71,6 @@ export default function DetailRouteSidebar({ route, routeIndex, color, distance,
               <div key={index} >
                 <ul >
                   {value.map((coordinate, idx) => (
-
                     <div className="cursor-pointer" key={idx} style={{ backgroundColor: '#CECECE', height: '45px', marginBottom: '10px', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {/* แสดงว่าเป็น Start หรือ Stop */}
                       {idx === 0 && <p className="text-green-500 font-bold mr-4">Start Schools</p>}
@@ -84,7 +83,9 @@ export default function DetailRouteSidebar({ route, routeIndex, color, distance,
 
                   ))}
                 </ul>
+                <p className="text-black">{value.length}</p>
               </div>
+              
             ))}
           </div>
 

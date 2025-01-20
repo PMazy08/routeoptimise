@@ -13,7 +13,7 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
 
   // console.log("F' Route Didu ->>>>"+Didu);
   // console.log("ROUTES Dur ->>>> "+routeDuration);
-  
+
 
 
 
@@ -34,7 +34,9 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
   };
 
   const drawRoute = async(route, routeKey, routeColor, distance, duration) => {
-    console.log(distance, duration);
+    // console.log(distance, duration);
+
+    
     
     mapRef.current.handleReset(); 
     const result = await mapRef.current.handleDrawRoute(route, routeKey, routeColor); 
@@ -124,7 +126,6 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
               {/* แมปข้อมูล items */}
               {routes.map((route, index) => {
                 const diduArray = JSON.parse(Didu);
-
                 return (
                   <li
                     key={index}
@@ -140,6 +141,8 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
                     <div
                       className="flex-1 px-4"
                       onClick={() => {
+                        
+                        
                         drawRoute(route, `route ${index + 1}`, routeColors[index], diduArray[index].distance, diduArray[index].duration);
                         // handleRouteClick(route, index)
                       }}
@@ -154,7 +157,7 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
                         <strong>Time:</strong> {diduArray[index].duration} Min
                       </p>
                       <p className="text-xs sm:text-sm">
-                        <strong>Students:</strong>
+                        <strong>Students: {}</strong>
                       </p>
                     </div>
 

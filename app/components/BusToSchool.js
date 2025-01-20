@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
+// import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
 export default function BusToSchoolSidebar({ isOpen, onClose }) {
 
@@ -40,39 +42,100 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
     focus:outline-none focus:ring-1 focus:ring-blue-500
   `;
 
-  ///-----------------------------------------------------------
+  ///-----------------input add bus stop---------------
+  // const [fields, setFields] = useState([]); // เก็บข้อมูล input
+  // const [showFields, setShowFields] = useState(false); // ควบคุมการแสดง input และปุ่ม Clear
 
-  const [fields, setFields] = useState([""]); // เริ่มต้น 1 ช่อง
+  // const addInput = () => {
+  //   setShowFields(true); // แสดง input และปุ่ม Clear
+  //   setFields([...fields, ""]); // เพิ่ม input ใหม่
+  // };
 
-  // เพิ่มช่องใหม่
-  const addInput = () => {
-    setFields((prev) => [...prev, ""]);
+  // const removeInput = (idx) => {
+  //   setFields(fields.filter((_, i) => i !== idx)); // ลบ input ตาม index
+  //   if (fields.length === 1) {
+  //     setShowFields(false); // ซ่อน input และปุ่ม Clear ถ้าไม่มี input เหลือ
+  //   }
+  // };
+
+  // const clearAll = () => {
+  //   setFields([]); // ลบ input ทั้งหมด
+  //   setShowFields(false); // ซ่อน input และปุ่ม Clear
+  // };
+
+  // const handleChange = (idx, value) => {
+  //   const updatedFields = [...fields];
+  //   updatedFields[idx] = value;
+  //   setFields(updatedFields);
+  // };
+
+
+
+
+  const [fields, setFields] = useState([{ name: "", geocoderRef: null }]);
+
+  const handleAddField = () => {
+    setFields([...fields, { name: "", geocoderRef: null }]);
   };
 
-  const clearAll = () => {
-    setFields([""]);
+  const handleRemoveField = (index) => {
+    setFields(fields.filter((_, idx) => idx !== index));
   };
 
-  // ลบช่องด้วย index
-  const removeInput = (index) => {
-    setFields((prev) => {
-      const updated = [...prev];
-      updated.splice(index, 1); // ลบ 1 ช่องที่ตำแหน่ง index
-      return updated;
-    });
-  };
-
-  // อัปเดตค่าของช่อง input
   const handleChange = (index, value) => {
-    setFields((prev) => {
-      const updated = [...prev];
-      updated[index] = value;
-      return updated;
-    });
+    const updatedFields = [...fields];
+    updatedFields[index].name = value;
+    setFields(updatedFields);
   };
 
+  useEffect(() => {
+    // Initialize Geocoder for each field
+    fields.forEach((field, index) => {
+      if (!field.geocoderRef) {
+        const geocoderContainer = document.getElementById(`geocoder-${index}`);
+        if (geocoderContainer) {
+          const geocoder = new MapboxGeocoder({
+            accessToken: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+            placeholder: "Search for places...",
+            marker: true,
+            limit: 3, // จำนวนผลลัพธ์สูงสุดที่แสดง
+          });
+  
+          geocoder.addTo(geocoderContainer);
+  
+          geocoder.on("result", (e) => {
+            const { center, place_name } = e.result; // ดึงข้อมูล center (lng, lat)
+            const [lng, lat] = center;
+  
+            console.log(`Selected Place: ${place_name}`);
+            console.log(`Longitude: ${lng}, Latitude: ${lat}`);
+  
+            // อัปเดตฟิลด์ด้วยชื่อสถานที่
+            handleChange(index, `${place_name} (${lng}, ${lat})`);
+          });
+  
+          const updatedFields = [...fields];
+          updatedFields[index].geocoderRef = geocoder;
+          setFields(updatedFields);
+        }
+      }
+    });
+  }, [fields]);
+  
 
-    ///-----------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+  ///-----------------------------------------------------------
   return (
     <aside
       className="
@@ -116,51 +179,93 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
 
 
         <div className="overflow-y-auto">
-        <div className="p-4">
-          <h2 className="text-lg font-semibold mb-2">Point Stops</h2>
 
-          {/* วนแสดง input ทีละแถว พร้อมปุ่มลบ */}
-          {fields.map((val, idx) => (
-            <div key={idx} className="flex items-center gap-2 mb-2">
-              <input
-                type="text"
-                value={val}
-                onChange={(e) => handleChange(idx, e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1
-                       focus:outline-none focus:ring-1 focus:ring-blue-500 
-                       text-sm w-full"
-                placeholder={`Input ${idx + 1}`}
-              />
-              <button
-                onClick={() => removeInput(idx)}
-                className="bg-red-500 text-white px-2 py-1 rounded 
-                       hover:bg-red-600 focus:outline-none focus:ring-2
-                       focus:ring-red-400 text-sm"
-              >
-                Remove
-              </button>
+          {/* <div className="p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">Point Stops</h2>
+              {showFields && (
+                <button
+                  onClick={clearAll}
+                  className="bg-red-500 text-white px-2 py-1 rounded 
+               hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 
+               text-sm"
+                >
+                  Clear All
+                </button>
+              )}
             </div>
-          ))}
 
-          {/* ปุ่ม Add */}
-          <button
-            onClick={addInput}
-            className="bg-blue-600 text-white px-3 py-2 rounded 
-                   hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
-                   text-sm"
-          >
-            Add
-          </button>
 
-          <button
-            onClick={clearAll}
-            className="bg-red-500 text-white px-3 py-2 rounded 
-                   hover:red-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
-                   text-sm"
-          >
-            Clear
-          </button>
-        </div>
+            {showFields && (
+              <>
+                {fields.map((val, idx) => (
+                  <div key={idx} className="flex items-center gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={val}
+                      onChange={(e) => handleChange(idx, e.target.value)}
+                      className="border border-gray-300 rounded px-2 py-1
+                   focus:outline-none focus:ring-1 focus:ring-blue-500 
+                   text-sm w-full"
+                      placeholder={`Input ${idx + 1}`}
+                    />
+                    <button
+                      onClick={() => removeInput(idx)}
+                      className="bg-red-500 text-white px-2 py-1 rounded 
+                   hover:bg-red-600 focus:outline-none focus:ring-2
+                   focus:ring-red-400 text-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
+
+      
+            <button
+              onClick={addInput}
+              className="bg-blue-600 text-white px-3 py-2 rounded 
+             hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
+             text-sm"
+            >
+              Add Bus Stop
+            </button>
+          </div> */}
+
+
+
+          <div className="p-4">
+            <h2 className="text-lg font-semibold mb-4">Point Stops with Geocoder</h2>
+
+            {fields.map((field, idx) => (
+              <div key={idx} className="flex items-center gap-2 mb-4">
+                <div className="flex-grow">
+                  {/* Geocoder Input */}
+                  <div id={`geocoder-${idx}`} className="w-full"></div>
+                </div>
+                <button
+                  onClick={() => handleRemoveField(idx)}
+                  className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+
+            <button
+              onClick={handleAddField}
+              className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              Add Bus Stop
+            </button>
+          </div>
+
+
+
+
+
+
 
 
 
