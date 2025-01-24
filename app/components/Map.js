@@ -12,6 +12,7 @@ import { subscribeAuthState } from "../services/authService";
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 const Map = forwardRef((props, ref) => {
+  
   const [user, setUser] = useState(null);
   const [idToken, setIdToken] = useState(""); // State สำหรับเก็บ token
 
@@ -35,11 +36,15 @@ const Map = forwardRef((props, ref) => {
   const [disdu, setdisdu] = useState([]);
 
 
-  // com อื่น ใช้ fun ได้
+  // com อื่น ใช้ func ได้
   useImperativeHandle(ref, () => ({
     handleSubmit,
     handleReset,
     handleDrawRoute,
+    handleAddCircleClick,
+    clearAllElements,
+    removeElement,
+    updateCircleRadius
   }));
 
 
@@ -55,6 +60,8 @@ const Map = forwardRef((props, ref) => {
     const unsubscribe = subscribeAuthState(setUser, setIdToken); // เรียกใช้ service
     return () => unsubscribe(); // เมื่อ component ถูกลบออก, ยกเลิกการ subscribe
   }, []); // ใช้ [] เพื่อให้เพียงแค่ครั้งแรกที่ mount
+
+
 
   useEffect(() => {
     const fetchAndSetMarkers = async () => {
@@ -156,10 +163,10 @@ const Map = forwardRef((props, ref) => {
 
 
   // ฟังก์ชันสำหรับการสร้างแผนที่
-const initializeMap = (mapCenter, selectedStyle) => {
+const initializeMap = (mapCenter) => {
   const map = new mapboxgl.Map({
     container: mapContainerRef.current,
-    style: selectedStyle,
+    style: "mapbox://styles/mapbox/light-v10",
     center: mapCenter,
     zoom: 12,
     attributionControl: false,
@@ -186,24 +193,24 @@ const initializeMap = (mapCenter, selectedStyle) => {
 //---------------------------------------------------
 
 // ฟังก์ชันสำหรับเพิ่ม Geocoder ลงในแผนที่
-const addGeocoder = (map) => {
-  const geocoder = new MapboxGeocoder({
-    accessToken: mapboxgl.accessToken,
-    mapboxgl: mapboxgl,
-    placeholder: "Search for places...",
-    flyTo: false, // ปิดการ zoom ไปยังตำแหน่งที่ค้นหา
-  });
+// const addGeocoder = (map) => {
+//   const geocoder = new MapboxGeocoder({
+//     accessToken: mapboxgl.accessToken,
+//     mapboxgl: mapboxgl,
+//     placeholder: "Search for places...",
+//     flyTo: false, // ปิดการ zoom ไปยังตำแหน่งที่ค้นหา
+//   });
 
-  map.addControl(geocoder);
+//   map.addControl(geocoder);
 
-  geocoder.on("result", (e) => {
-    console.log("Selected place:", e.result);
-    const [lng, lat] = e.result.center;
-    new mapboxgl.Marker().setLngLat([lng, lat]).addTo(map);
-    // map.flyTo({ center: [lng, lat], zoom: 14 });
-    console.log("---> +++", lng, lat);
-  });
-};
+//   geocoder.on("result", (e) => {
+//     console.log("Selected place:", e.result);
+//     const [lng, lat] = e.result.center;
+//     new mapboxgl.Marker().setLngLat([lng, lat]).addTo(map);
+//     // map.flyTo({ center: [lng, lat], zoom: 14 });
+//     console.log("---> +++", lng, lat);
+//   });
+// };
 
 
 
@@ -301,108 +308,309 @@ const addGeocoder = (map) => {
 
 
 
+  // ------------------------pin รัศมี--------------------------------------------
+
+
+  const AddCircleClickRef = useRef(false);
+  const [AddCircleClick, setAddCircleClick] = useState(false);
+  const [mapElements, setMapElements] = useState([]); // เก็บข้อมูลหมุดและวงกลมทั้งหมด
+
+const handleAddCircleClick = () => {
+  return new Promise((resolve) => {
+    setAddCircleClick((prev) => !prev); // สลับค่าระหว่าง true และ false
+
+    if (mapRef.current) {
+      mapRef.current.on('click', async (event) => {
+        const { lng, lat } = event.lngLat;
+        resolve({ lng, lat }); // ส่งค่าพิกัดกลับหลังจากคลิก
+      });
+    }
+  });
+};
+
+
+  useEffect(() => {
+    AddCircleClickRef.current = AddCircleClick;
+  }, [AddCircleClick]);
+
+  const drawCircle = (center, radius, map, circleId) => {
+    const points = 64;
+    const coordinates = [];
+    const distanceX = radius / (111.32 * Math.cos((center[1] * Math.PI) / 180));
+    const distanceY = radius / 110.574;
+
+    for (let i = 0; i < points; i++) {
+      const theta = (i / points) * (2 * Math.PI);
+      const x = distanceX * Math.cos(theta);
+      const y = distanceY * Math.sin(theta);
+      coordinates.push([center[0] + x, center[1] + y]);
+    }
+    coordinates.push(coordinates[0]);
+
+    const circleGeoJSON = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Polygon",
+            coordinates: [coordinates],
+          },
+        },
+      ],
+    };
+
+    if (map.getSource(circleId)) {
+      map.getSource(circleId).setData(circleGeoJSON);
+    } else {
+      map.addSource(circleId, {
+        type: "geojson",
+        data: circleGeoJSON,
+      });
+
+      map.addLayer({
+        id: circleId,
+        type: "fill",
+        source: circleId,
+        layout: {},
+        paint: {
+          "fill-color": "rgba(0, 218, 88, 0.3)",
+          "fill-opacity": 0.5,
+        },
+      });
+    }
+  };
+
+
+
+  // const onMapClick = (event, map) => {
+  //   const { lng, lat } = event.lngLat;
+  //   const circleId = `circle-${lng}-${lat}`;
+  
+  //   const marker = new mapboxgl.Marker({ color: "red", draggable: true })
+  //     .setLngLat([lng, lat])
+  //     .addTo(map);
+  
+  //   const radius = 0.7;
+  //   drawCircle([lng, lat], radius, map, circleId);
+  
+  //   marker.on("dragend", () => {
+  //     const newLngLat = marker.getLngLat();
+  
+  //     // วาดวงกลมใหม่ที่ตำแหน่งล่าสุด
+  //     drawCircle([newLngLat.lng, newLngLat.lat], radius, map, circleId);
+  
+  //     // อัปเดตตำแหน่งของหมุดและวงกลมใน state
+  //     setMapElements((prev) =>
+  //       prev.map((el) =>
+  //         el.circleId === circleId
+  //           ? { ...el, lng: newLngLat.lng, lat: newLngLat.lat }
+  //           : el
+  //       )
+  //     );
+  
+  //     console.log("New Position: ----> ", newLngLat);
+  //     // ส่งพิกัดที่อัปเดตไปยัง Parent Component
+  //     onMapElementsUpdate(mapElements);
+  //   });
+  
+  //   // บันทึกหมุดและค่าพิกัดเริ่มต้นใน state
+  //   setMapElements((prev) => [
+  //     ...prev,
+  //     { marker, circleId, map, lng, lat },
+  //   ]);
+  
+  //   setAddCircleClick(false);
+  //       // ส่งพิกัดเริ่มต้นไปยัง Parent Component
+  //     onMapElementsUpdate(mapElements);
+  // };
+
+
+
+
+
+  // use real
+  const onMapClick = (event, map) => {
+    const { lng, lat } = event.lngLat;
+    const circleId = `circle-${lng}-${lat}`; // สร้าง ID สำหรับวงกลม
+
+    // สร้างหมุด
+    const marker = new mapboxgl.Marker({ color: "red", draggable: true })
+      .setLngLat([lng, lat])
+      .addTo(map);
+
+    const radius = 1;
+    
+    drawCircle([lng, lat], radius, map, circleId);
+
+    marker.on("dragend", () => {
+      const newLngLat = marker.getLngLat();
+  
+      drawCircle([newLngLat.lng, newLngLat.lat], radius, map, circleId);
+
+      setMapElements((prev) =>
+        prev.map((el) =>
+          el.circleId === circleId
+            ? { ...el, lng: newLngLat.lng, lat: newLngLat.lat }
+            : el
+        )
+      );
+    });
+
+    // เพิ่มหมุดใหม่ใน state
+    setMapElements((prev) => [
+      ...prev,
+      { marker, circleId, map, lng, lat },
+    ]);
+
+    setAddCircleClick(false);
+  };
+
+  // ใช้ useEffect เพื่อส่งข้อมูลไปที่ Parent Component เมื่อ mapElements เปลี่ยนแปลง
+  useEffect(() => {
+    if (typeof props.onMapElementsUpdate === "function") {
+      props.onMapElementsUpdate(mapElements);
+    }
+  }, [mapElements, props.onMapElementsUpdate]); // อัปเดตเมื่อ mapElements เปลี่ยนแปลง
+
+
+  const updateCircleRadius = (idx, radius) => {
+    const element = mapElements[idx];
+    console.log("นี้-> "+ radius);
+    
+    if (element) {
+      const {circleId, map, lng, lat } = element;
+      drawCircle([lng, lat], radius, map, circleId); // วาดวงกลมใหม่ที่ตำแหน่งเดิมด้วยรัศมีที่อัปเดต
+    }
+  };
+
+
+
+
+
+  // use//
+  // const onMapClick = (event, map) => {
+  //   const { lng, lat } = event.lngLat;
+  //   const circleId = `circle-${lng}-${lat}`; // สร้าง ID สำหรับวงกลม
+  
+  //   // สร้างหมุด
+  //   const marker = new mapboxgl.Marker({ color: "red", draggable: true })
+  //     .setLngLat([lng, lat])
+  //     .addTo(map);
+  
+  //   const radius = 0.7;
+  
+  //   // วาดวงกลม
+  //   drawCircle([lng, lat], radius, map, circleId);
+  
+  //   // ตั้งค่าเมื่อหมุดถูกลาก
+  //   marker.on("dragend", () => {
+  //     const newLngLat = marker.getLngLat();
+  
+  //     // วาดวงกลมใหม่ที่ตำแหน่งล่าสุด
+  //     drawCircle([newLngLat.lng, newLngLat.lat], radius, map, circleId);
+  
+  //     // อัปเดตตำแหน่งของหมุดใน state
+  //     setMapElements((prev) => {
+  //       const updatedElements = prev.map((el) =>
+  //         el.circleId === circleId
+  //           ? { ...el, lng: newLngLat.lng, lat: newLngLat.lat }
+  //           : el
+  //       );
+  
+  //       // เรียกฟังก์ชันอัปเดต Parent Component
+  //       onMapElementsUpdate(updatedElements);
+  
+  //       return updatedElements;
+  //     });
+  //   });
+  
+  //   // เพิ่มหมุดใหม่ใน state
+  //   setMapElements((prev) => {
+  //     const updatedElements = [
+  //       ...prev,
+  //       { marker, circleId, map, lng, lat },
+  //     ];
+  
+  //     // เรียกฟังก์ชันอัปเดต Parent Component
+  //     onMapElementsUpdate(updatedElements);
+  
+  //     return updatedElements;
+  //   });
+  
+  //   setAddCircleClick(false); // ปิดสถานะการเพิ่มหมุด
+  // };
+
+  const removeElement = (idx) => {
+    const element = mapElements[idx]; // ค้นหา element ตาม index
+    if (!element) return;
+  
+    const { marker, circleId, map } = element;
+  
+    // ลบหมุด
+    marker.remove();
+  
+    // ลบวงกลม
+    if (map.getLayer(circleId)) map.removeLayer(circleId);
+    if (map.getSource(circleId)) map.removeSource(circleId);
+  
+    // อัปเดต state
+    setMapElements((prev) => {
+      const updatedElements = prev.filter((_, i) => i !== idx);
+  
+      // ส่งข้อมูลใหม่ไปยัง Parent Component
+      if (typeof onMapElementsUpdate === "function") {
+        props.onMapElementsUpdate(updatedElements);
+      }
+  
+      return updatedElements;
+    });
+  };
+  
+  const clearAllElements = () => {
+    mapElements.forEach(({ marker, circleId, map }) => {
+      marker.remove();
+      if (map.getLayer(circleId)) map.removeLayer(circleId);
+      if (map.getSource(circleId)) map.removeSource(circleId);
+    });
+  
+    // อัปเดต state และแจ้ง Parent Component
+    setMapElements([]); // ลบข้อมูลใน mapElements
+    if (typeof onMapElementsUpdate === "function") {
+      props.onMapElementsUpdate([]); // แจ้ง Parent Component ว่าไม่มีข้อมูลแล้ว
+    }
+  };
+
+
+
+
 
   useEffect(() => {
     if (!mapCenter || (mapCenter[0] === 0 && mapCenter[1] === 0)) return;
-  
-    // สร้างแผนที่
-    const map = initializeMap(mapCenter, selectedStyle);
+
+    const map = initializeMap(mapCenter);
     mapRef.current = map;
 
-
-    const drawCircle = (center, radius, map, circleId) => {
-      const points = 64; // จำนวนจุดในวงกลม
-      const coordinates = [];
-      const distanceX = radius / (111.32 * Math.cos((center[1] * Math.PI) / 180));
-      const distanceY = radius / 110.574;
-    
-      for (let i = 0; i < points; i++) {
-        const theta = (i / points) * (2 * Math.PI);
-        const x = distanceX * Math.cos(theta);
-        const y = distanceY * Math.sin(theta);
-    
-        coordinates.push([center[0] + x, center[1] + y]);
+    map.on("click", (event) => {
+      if (AddCircleClickRef.current) {
+        onMapClick(event, map, AddCircleClickRef, setAddCircleClick);
       }
-      coordinates.push(coordinates[0]); // ปิดวงกลม
-    
-      const circleGeoJSON = {
-        type: "FeatureCollection",
-        features: [
-          {
-            type: "Feature",
-            geometry: {
-              type: "Polygon",
-              coordinates: [coordinates],
-            },
-          },
-        ],
-      };
-    
-      // ตรวจสอบว่ามี Source อยู่แล้วหรือไม่
-      if (map.getSource(circleId)) {
-        map.getSource(circleId).setData(circleGeoJSON); // อัปเดตข้อมูลของวงกลม
-      } else {
-        map.addSource(circleId, {
-          type: "geojson",
-          data: circleGeoJSON,
-        });
-    
-        map.addLayer({
-          id: circleId,
-          type: "fill",
-          source: circleId,
-          layout: {},
-          paint: {
-            "fill-color": "rgba(0, 218, 88, 0.3)", // สีและความโปร่งใสของวงกลม
-            "fill-opacity": 0.5,
-          },
-        });
-      }
-    };
-    
-    const onMapClick = (event) => {
-      const { lng, lat } = event.lngLat;
-    
-      const circleId = `circle-${lng}-${lat}`; // สร้าง ID ที่ไม่ซ้ำกันสำหรับวงกลม
-    
-      // สร้างหมุดที่สามารถเลื่อนได้
-      const marker = new mapboxgl.Marker({ color: "red", draggable: true })
-        .setLngLat([lng, lat]) // ตั้งค่าพิกัดของหมุด
-        .addTo(map); // เพิ่มหมุดลงในแผนที่
+    });
 
-      const radius = 0.7;
-    
-      // วาดวงกลมรอบหมุด
-      drawCircle([lng, lat], radius, map, circleId); // 1 km
-    
-      // อัปเดตรัศมีเมื่อหมุดถูกเลื่อน
-      marker.on("dragend", () => {
-        const newLngLat = marker.getLngLat();
-        console.log("New Position:", newLngLat);
-        drawCircle([newLngLat.lng, newLngLat.lat], radius, map, circleId);
-      });
-    };
-    
-    // ฟังการคลิกบนแผนที่
-    map.on("click", onMapClick);
-  
-    // เพิ่ม Geocoder
-    addGeocoder(map);
-  
-    // เพิ่ม Markers
     if (markers.length > 0) {
       addMarkersToMap(map, markers);
     }
-  
-    return () => map.remove(); // Cleanup เมื่อ component ถูกลบ
-  }, [mapCenter, selectedStyle, markers]);
+
+    return () => map.remove();
+  }, [mapCenter, markers]);
+
+  // MAP END *************************************************************************************************  
 
 
-  // MAP END *************************************************************************************************
 
   const distance = [];
 
-  const handleSubmit = async (num_bus, max_stops, max_time) => {
+  const handleSubmit = async (num_bus, max_stops, max_time, type) => {
     const locations = markers.map((marker) => [parseFloat(marker.latitude), parseFloat(marker.longitude)]);
     const data = {
       depot: [parseFloat(depotLat), parseFloat(depotLng)],
@@ -462,7 +670,7 @@ const addGeocoder = (map) => {
         
         if (coordinates) {
           try {
-            const didu = await drawRoute(mapRef.current, coordinates, routeKey, colors[index], true);
+            const didu = await drawRoute(mapRef.current, coordinates, routeKey, colors[index], type);
             distance.push(didu.distance); // Push distance when resolved
             duration.push(didu.duration); // Push duration when resolved
             return didu;
@@ -516,13 +724,13 @@ useEffect(() => {
 
 
 
-const handleDrawRoute = async(route, routeKey, routeColor) => {
+const handleDrawRoute = async(route, routeKey, routeColor, type) => {
   // console.log(route);
   // console.log(routeKey);
   // console.log(routeColor);
   const coordinates = route[routeKey];
   if (coordinates) {
-    const result = await drawRoute(mapRef.current, coordinates, routeKey, routeColor, false); // แสดงลำดับหมุด
+    const result = await drawRoute(mapRef.current, coordinates, routeKey, routeColor, type); // แสดงลำดับหมุด
       // console.log(".....> "+result);
       return result;
   }
@@ -536,14 +744,23 @@ const handleDrawRoute = async(route, routeKey, routeColor) => {
     <div className="h-screen w-full">
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
-      
-      <div className="absolute bottom-4 right-4">
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
-        >
-          Add Bus Stop
-        </button>
-      </div>
+      <p className="absolute bottom-4 right-4 text-gray-600">
+        {AddCircleClick ? "Choose a location ... " : " "}
+      </p>
+
+
+
+
+      <ul className="absolute right-0 bottom-0">
+        {mapElements.map((el, idx) => (
+          <li key={el.circleId}>
+            Marker {idx + 1}: Longitude: {el.lng.toFixed(5)}, Latitude: {el.lat.toFixed(5)}
+          </li>
+        ))}
+      </ul>
+
+
+
     </div>
   );
 });

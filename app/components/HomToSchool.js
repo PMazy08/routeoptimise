@@ -3,13 +3,17 @@ import { useState, useEffect, useRef } from "react";
 import FindingOverlay from '../modals/FindingModal'; // นำเข้า Component
 
 
+import { subscribeAuthState } from "../services/authService";
+import { fetchStudentPage } from "../services/studentService";
+
+
 export default function HomeToSchoolSidebar({ isOpen, openComponent, onClose, mapRef}) {
   if (!isOpen) return null; // ถ้า Sidebar ไม่เปิด ให้คืนค่า null
 
   // const [user, setUser] = useState(null);
   // const [idToken, setIdToken] = useState("");
-  const [numVehicles, setNumVehicles] = useState(6);
-  const [maxStopsPerVehicle, setMaxStopsPerVehicle] = useState(30);
+  const [numVehicles, setNumVehicles] = useState(7);
+  const [maxStopsPerVehicle, setMaxStopsPerVehicle] = useState(24);
   const [maxTravelTime, setMaxTravelTime] = useState(180);
   // const [studentAll, setStudentAll] = useState([]); // State สำหรับเก็บข้อมูล API
   // const [depotLat, setDepotLat] = useState();
@@ -44,6 +48,19 @@ export default function HomeToSchoolSidebar({ isOpen, openComponent, onClose, ma
   
   //   fetchAndSetStudents();
   // }, [idToken]);
+
+  const [user, setUser] = useState(null);
+  const [idToken, setIdToken] = useState(""); // State สำหรับเก็บ token
+
+
+  
+
+  
+
+  useEffect(() => {
+    const unsubscribe = subscribeAuthState(setUser, setIdToken); // เรียกใช้ service
+    return () => unsubscribe(); // เมื่อ component ถูกลบออก, ยกเลิกการ subscribe
+  }, []); // ใช้ [] เพื่อให้เพียงแค่ครั้งแรกที่ mount
 
 
   const [rows, setRows] = useState([
@@ -81,7 +98,8 @@ const findingRoute = async () => {
       const { routes, routeColors, routeDistance, routeDuration, Didu} = await mapRef.current.handleSubmit(
         parseInt(numVehicles),
         parseInt(maxStopsPerVehicle),
-        parseInt(maxTravelTime)
+        parseInt(maxTravelTime),
+        true
       ); 
       // openComponent("Route");
       openComponent("Route", { routes, routeColors, routeDistance, routeDuration, Didu });
@@ -93,6 +111,9 @@ const findingRoute = async () => {
     setIsLoading(false); // สิ้นสุดโหลด
   }
 };
+
+
+
 
   
 // ----------------------------------------------------------------------------
@@ -114,9 +135,6 @@ const findingRoute = async () => {
   `;
 
 
-
-
-
   const [currentPage, setCurrentPage] = useState(1); // หน้าปัจจุบัน
   const rowsPerPage = 10; // จำนวนแถวต่อหน้า
 
@@ -130,6 +148,11 @@ const findingRoute = async () => {
     const rowIndex = (currentPage - 1) * rowsPerPage + index;
     rows[rowIndex].isActive = !rows[rowIndex].isActive;
   };
+
+
+
+  // ----------------------------------------------------------------
+
 
   return (
     
@@ -270,29 +293,28 @@ const findingRoute = async () => {
 
           <div className="mx-auto max-w-screen-sm p-2 sm:p-4 mb-[50px]">
       <div className="shadow-lg rounded-lg overflow-hidden">
-        {/* หัวตาราง */}
+
         <div className="grid grid-cols-3 bg-gray-100 border-b-2 border-gray-300 text-sm font-semibold text-gray-700 tracking-wider uppercase">
           <div className="py-4 px-6 text-left">Name</div>
           <div className="py-4 px-6 text-left">Address</div>
           <div className="py-4 px-6 text-center">Status</div>
         </div>
 
-        {/* เนื้อหาตาราง */}
         <div className="divide-y divide-gray-200">
           {currentRows.map((row, i) => (
             <div
               key={row.id}
               className="grid grid-cols-3 items-center hover:bg-gray-50 transition"
             >
-              {/* ชื่อ */}
+
               <div className="py-4 px-6 text-sm font-medium text-gray-900">
                 {row.name}
               </div>
 
-              {/* อีเมล */}
+
               <div className="py-4 text-sm text-gray-500">{row.email}</div>
 
-              {/* สถานะ */}
+
               <div className="py-4 px-6 flex justify-center">
                 <label className="relative inline-block w-12 h-6 cursor-pointer">
                   <input
@@ -320,7 +342,7 @@ const findingRoute = async () => {
         </div>
       </div>
 
-      {/* ปุ่ม Next และ Back */}
+
       <div className="flex justify-between mt-4">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -340,7 +362,10 @@ const findingRoute = async () => {
           Next
         </button>
       </div>
+
     </div>
+
+
 
         </div>
 

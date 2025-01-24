@@ -39,6 +39,22 @@ export default function Sidebar() {
 
 
 
+  // const [mapElements, setMapElements] = useState([]); // State สำหรับเก็บหมุด
+  // const handleMapElementsUpdate = (elements) => {
+  //   setMapElements(elements); // อัปเดต State mapElements
+  // };
+
+
+  const [mapElements, setMapElements] = useState([]); // State for map elements
+
+  // Function to update mapElements
+  const handleMapElementsUpdate = (elements) => {
+    setMapElements(elements); // Update mapElements
+    console.log("Updated mapElements in Sidebar:", elements); // Debugging
+  };
+
+
+
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
   };
@@ -51,38 +67,6 @@ export default function Sidebar() {
       setIsOpen(!isOpen); 
     }
   };
-
-
-  // const toggleComponent = (componentName) => {
-  //   setActiveComponent((prev) =>
-  //     prev === componentName ? null : componentName
-  //   );
-  //   setActiveLink(componentName); // ถ้าค่าปัจจุบันตรงกับคอมโพเนนต์ที่เลือก ให้ตั้งค่าเป็น null
-  // };
-
-
-  // const renderComponent = () => {
-  //   const commonProps = {
-  //     isOpen: true,
-  //     openComponent: (componentName) => setActiveComponent(componentName),
-  //     onClose: () => setActiveComponent(null),
-  //   };
-  
-  //   switch (activeComponent) {
-  //     case "HomeToSchools":
-  //       return <HomeToSchools mapRef={mapRef} {...commonProps} />;
-  //     case "ButToSchools":
-  //       return <ButToSchools {...commonProps} />;
-  //     case "HistoryRoute":
-  //       return <HistoryRoute {...commonProps} />;
-  //     case "Student":
-  //       return <Student {...commonProps} />;
-  //     case "Route":
-  //       return <Route mapRef={mapRef} {...commonProps}/>;
-  //     default:
-  //       return null;
-  //   }
-  // };
 
 
   const toggleComponent = (componentName, props = {}) => {
@@ -100,6 +84,7 @@ export default function Sidebar() {
       setIsOpen(true);
     },
   };
+
   
   const renderComponent = () => {
     if (!activeComponent) return null;
@@ -110,7 +95,7 @@ export default function Sidebar() {
       case "HomeToSchools":
         return <HomeToSchools mapRef={mapRef} {...commonProps} />;
       case "ButToSchools":
-        return <ButToSchools {...commonProps} />;
+        return <ButToSchools mapRef={mapRef} mapElements={mapElements} {...commonProps} />;
       case "HistoryRoute":
         return <HistoryRoute {...commonProps} />;
       case "Student":
@@ -496,7 +481,7 @@ export default function Sidebar() {
       {/* ml-0 sm:ml-0 sm:mr-0 */}
       <div className="">
           <div className="w-full h-full">
-            <Map ref={mapRef} />
+            <Map ref={mapRef} onMapElementsUpdate={handleMapElementsUpdate}/>
           </div>
       </div>
 

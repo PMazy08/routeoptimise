@@ -57,7 +57,7 @@ export default function Home() {
       const idToken = await user.getIdToken();
       console.log("JWT Token 1:", idToken);
 
-      router.push("/pages/map2");
+      router.push("/map");
     } catch (error) {
     }
   };
@@ -70,7 +70,7 @@ export default function Home() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      router.push("/pages/map2");
+      router.push("/map");
     } catch (error) {
     }
   };

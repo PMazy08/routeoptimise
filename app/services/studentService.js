@@ -32,4 +32,13 @@ const fetchStudentAll = async (idToken) => {
     }
   };
 
-  export {fetchStudentAll };
+
+
+  const fetchStudentPage = async (idToken, page) => {
+    
+  };
+
+  export {fetchStudentAll, fetchStudentPage};
+
+
+

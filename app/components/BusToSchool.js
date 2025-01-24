@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 // import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
-export default function BusToSchoolSidebar({ isOpen, onClose }) {
+export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElements}) {
 
   if (!isOpen) return null; // ถ้า Sidebar ไม่เปิด ให้คืนค่า null
 
@@ -11,17 +11,21 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
   const [maxStopsPerVehicle, setMaxStopsPerVehicle] = useState(20);
   const [maxTravelTime, setMaxTravelTime] = useState(150);
 
+  const elements = mapElements || [];
+
+
+
   const [rows, setRows] = useState([
-    { id: 1, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
-    { id: 2, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
-    { id: 3, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
-    { id: 4, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
-    { id: 5, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
-    { id: 6, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
-    { id: 7, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
-    { id: 8, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
-    { id: 9, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
-    { id: 10, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
+    // { id: 1, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
+    // { id: 2, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
+    // { id: 3, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
+    // { id: 4, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
+    // { id: 5, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
+    // { id: 6, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
+    // { id: 7, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
+    // { id: 8, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
+    // { id: 9, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
+    // { id: 10, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
   ]);
 
   // toggleStatus (สลับ Active/Inactive)
@@ -43,50 +47,120 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
   `;
 
   ///-----------------input add bus stop---------------
-  // const [fields, setFields] = useState([]); // เก็บข้อมูล input
-  // const [showFields, setShowFields] = useState(false); // ควบคุมการแสดง input และปุ่ม Clear
+  const [fields, setFields] = useState([]); // เก็บข้อมูล input
+  const [showFields, setShowFields] = useState(false); // ควบคุมการแสดง input และปุ่ม Clear
+  const [radiusValues, setRadiusValues] = useState([]); // สำหรับจัดการ radius ของแต่ละ field
 
-  // const addInput = () => {
-  //   setShowFields(true); // แสดง input และปุ่ม Clear
-  //   setFields([...fields, ""]); // เพิ่ม input ใหม่
-  // };
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false); // สถานะปุ่ม
+
+  const handleAddInput = async () => {
+    setIsButtonDisabled(true); // ปิดปุ่มเมื่อกำลังเพิ่มข้อมูล
+  
+    // แสดง fields ทันที
+    setShowFields(true);
+  
+    // เพิ่มฟิลด์ว่างๆ ทันที
+    setFields((prevFields) => [...prevFields, ""]);
+    setRadiusValues([...radiusValues, 1]);
+  
+    // รอให้ผู้ใช้คลิกแผนที่และอัปเดตข้อมูล
+    await addInput();
+  
+    setIsButtonDisabled(false); // เปิดปุ่มอีกครั้งเมื่อ addInput เสร็จ
+  };
+  
+  const addInput = async () => {
+    if (mapRef.current) {
+      try {
+        // รอให้ผู้ใช้คลิกแผนที่
+        const lnglat = await mapRef.current.handleAddCircleClick();
+        console.log("Longitude and Latitude in BusToSchool:", lnglat);
+  
+        // อัปเดต fields ด้วยค่าพิกัดที่ได้จากแผนที่
+        setFields((prevFields) => {
+          const updatedFields = [...prevFields];
+          updatedFields[updatedFields.length - 1] = `${lnglat.lng}, ${lnglat.lat}`; // อัปเดต field ล่าสุดที่ถูกเพิ่มเข้ามา
+          return updatedFields;
+        });
+      } catch (error) {
+        console.error("Error in addInput:", error);
+      }
+    }
+    console.log("ปิดแมะ");
+  };
+  
+  
+
+  const removeInput = (idx) => {
+    setFields((prevFields) => prevFields.filter((_, i) => i !== idx)); // ลบ input ตาม index
+    setRadiusValues((prevFields) => prevFields.filter((_, i) => i !== idx));
+    // setFields(fields.filter((_, i) => i !== idx)); // ลบ input ตาม index
+    if (fields.length === 1) {
+      setShowFields(false); // ซ่อน input และปุ่ม Clear ถ้าไม่มี input เหลือ
+    }
+    if (mapRef.current) {
+      mapRef.current.removeElement(idx); // เรียก removeElement ผ่าน ref
+    }
+  };
+
+  
 
   // const removeInput = (idx) => {
-  //   setFields(fields.filter((_, i) => i !== idx)); // ลบ input ตาม index
+  //   setFields((prevFields) => {
+  //     // ลบ index ที่เลือกออก
+  //     const updatedFields = prevFields.filter((_, i) => i !== idx);
+  
+  //     // อัปเดต index ใหม่ (หากจำเป็น)
+  //     return updatedFields;
+  //   });
+  
   //   if (fields.length === 1) {
   //     setShowFields(false); // ซ่อน input และปุ่ม Clear ถ้าไม่มี input เหลือ
   //   }
+  
+  //   // ลบ element บนแผนที่ผ่าน mapRef
+  //   if (mapRef.current) {
+  //     mapRef.current.removeElement(idx); // เรียก removeElement ผ่าน ref
+  //   }
   // };
+  
+  
 
-  // const clearAll = () => {
-  //   setFields([]); // ลบ input ทั้งหมด
-  //   setShowFields(false); // ซ่อน input และปุ่ม Clear
-  // };
-
-  // const handleChange = (idx, value) => {
-  //   const updatedFields = [...fields];
-  //   updatedFields[idx] = value;
-  //   setFields(updatedFields);
-  // };
-
-
-
-
-  const [fields, setFields] = useState([{ name: "", geocoderRef: null }]);
-
-  const handleAddField = () => {
-    setFields([...fields, { name: "", geocoderRef: null }]);
+  const clearAll = () => {
+    setFields([]); // ลบ input ทั้งหมด
+    setShowFields(false); // ซ่อน input และปุ่ม Clear
+    if (mapRef.current) {
+      mapRef.current.clearAllElements()
+    }
   };
 
-  const handleRemoveField = (index) => {
-    setFields(fields.filter((_, idx) => idx !== index));
-  };
-
-  const handleChange = (index, value) => {
+  const handleChange = (idx, value) => {
     const updatedFields = [...fields];
-    updatedFields[index].name = value;
+    updatedFields[idx] = value;
     setFields(updatedFields);
   };
+
+
+
+
+  // const [fields, setFields] = useState([{ name: "", geocoderRef: null }]);
+
+  // const handleAddField = () => {
+  //   if (mapRef.current) {
+  //     mapRef.current.handleAddCircleClick(); 
+  //   }
+  //   setFields([...fields, { name: "", geocoderRef: null }]);
+  // };
+
+  // const handleRemoveField = (index) => {
+  //   setFields(fields.filter((_, idx) => idx !== index));
+  // };
+
+  // const handleChange = (index, value) => {
+  //   const updatedFields = [...fields];
+  //   updatedFields[index].name = value;
+  //   setFields(updatedFields);
+  // };
 
   useEffect(() => {
     // Initialize Geocoder for each field
@@ -121,19 +195,34 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
       }
     });
   }, [fields]);
-  
+  //-------------------------------------------------------
+  // const [radius, setRadius] = useState(["1"]);
+
+  // const handleChangeRadius = (e) => {
+  //   const inputValue = e.target.value;
+
+  //   // ใช้ regex ตรวจสอบทศนิยมไม่เกิน 1 ตำแหน่ง
+  //   if (/^\d*\.?\d{0,1}$/.test(inputValue)) {
+  //     setRadius(inputValue); // อัปเดตค่าเฉพาะที่ผ่านเงื่อนไข
+  //   }
+  // };
 
 
 
 
 
+  const handleChangeRadius = (idx, value) => {
+    if (/^\d*\.?\d{0,1}$/.test(value)) {
+      const updatedRadius = [...radiusValues];
+      updatedRadius[idx] = value; // อัปเดตค่า radius ของ field นั้น
+      setRadiusValues(updatedRadius);
 
-
-
-
-
-
-
+      // ส่งค่า radius ไปยัง Map เพื่ออัปเดตวงกลม
+      if (mapRef.current) {
+        mapRef.current.updateCircleRadius(idx, parseFloat(value));  // ส่งไปยัง Map
+      }
+    }
+  };
 
   ///-----------------------------------------------------------
   return (
@@ -151,9 +240,12 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
         {/* Sticky top */}
         <div className="sticky top-0 bg-gray-100">
           <div className="flex items-center justify-between mt-2 mb-2">
-            <h2 className="text-lg font-bold">Home To Schools</h2>
+            <h2 className="text-lg font-bold">Bus To Schools</h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onClose()
+                clearAll()
+              }}
               className="justify-items-center w-[30px] h-[30px] bg-red-500 text-black  rounded hover:bg-red-800"
             >
               <svg
@@ -174,15 +266,16 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
           </div>
         </div>
 
+
         {/* Header */}
         {/* <h2 className="text-lg font-bold mt-2">Home To Schools</h2> */}
 
 
         <div className="overflow-y-auto">
 
-          {/* <div className="p-4">
+          <div className="p-4">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold">Point Stops</h2>
+              <h2 className="text-lg font-semibold">Bus Stops</h2>
               {showFields && (
                 <button
                   onClick={clearAll}
@@ -195,80 +288,108 @@ export default function BusToSchoolSidebar({ isOpen, onClose }) {
               )}
             </div>
 
-
             {showFields && (
               <>
                 {fields.map((val, idx) => (
                   <div key={idx} className="flex items-center gap-2 mb-2">
                     <input
                       type="text"
-                      value={val}
+                      value={
+                        elements[idx]
+                          ? `Lng: ${elements[idx].lng.toFixed(8)}, Lat: ${elements[idx].lat.toFixed(8)}`
+                          : val
+                      } // แสดงค่าจาก mapElements หรือค่าที่เก็บใน fields
                       onChange={(e) => handleChange(idx, e.target.value)}
-                      className="border border-gray-300 rounded px-2 py-1
-                   focus:outline-none focus:ring-1 focus:ring-blue-500 
-                   text-sm w-full"
+                      className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm w-full"
                       placeholder={`Input ${idx + 1}`}
                     />
+
+                    <input
+                      type="number"
+                      min="0.0"
+                      step="0.1"
+                      value={radiusValues[idx] || ""} // ค่า radius ของ field นั้น
+                      className={inputClass}
+                      style={{ width: "60px" }}
+                      onChange={(e) => handleChangeRadius(idx, e.target.value)}
+                    />
+                    <p>km</p>
+
                     <button
                       onClick={() => removeInput(idx)}
-                      className="bg-red-500 text-white px-2 py-1 rounded 
-                   hover:bg-red-600 focus:outline-none focus:ring-2
-                   focus:ring-red-400 text-sm"
+                      className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 text-sm"
                     >
-                      Remove
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="size-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18 18 6M6 6l12 12"
+                        />
+                      </svg>
                     </button>
                   </div>
                 ))}
               </>
             )}
 
+
+<button
+  onClick={handleAddInput}
+  disabled={isButtonDisabled} // ปิดการใช้งานปุ่มถ้ากดแล้ว
+  className={`${
+    isButtonDisabled ? "text-gray-400" : "text-blue-600 hover:text-blue-700"
+  } text-sm flex justify-items-center mr-1`}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth="1.5"
+    stroke="currentColor"
+    className="size-5"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+    />
+  </svg>
+  {isButtonDisabled ? "Add" : "Add"}
+</button>
+
+
       
-            <button
+            {/* <button
               onClick={addInput}
-              className="bg-blue-600 text-white px-3 py-2 rounded 
-             hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
-             text-sm"
+              className=" text-blue-600
+             hover:text-blue-700
+             text-sm flex justify-items-center mr-1"
             >
-              Add Bus Stop
-            </button>
-          </div> */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                className="size-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                />
+              </svg>
+              Add
+            </button> */}
 
-
-
-          <div className="p-4">
-            <h2 className="text-lg font-semibold mb-4">Point Stops with Geocoder</h2>
-
-            {fields.map((field, idx) => (
-              <div key={idx} className="flex items-center gap-2 mb-4">
-                <div className="flex-grow">
-                  {/* Geocoder Input */}
-                  <div id={`geocoder-${idx}`} className="w-full"></div>
-                </div>
-                <button
-                  onClick={() => handleRemoveField(idx)}
-                  className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 text-sm"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-
-            <button
-              onClick={handleAddField}
-              className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              Add Bus Stop
-            </button>
           </div>
-
-
-
-
-
-
-
-
-
         <hr className="m-[10px]" />
 
         {/* ช่องกรอกค่า Bus, Max Capacity, Max Time */}

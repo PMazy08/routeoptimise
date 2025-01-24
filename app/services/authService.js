@@ -3,7 +3,7 @@ import app from "../../config"; // หรือไฟล์ config ของ fir
 
 const auth = getAuth(app);
 
-export const subscribeAuthState = (setUser, setIdToken) => {
+const subscribeAuthState = (setUser, setIdToken) => {
     return onAuthStateChanged(auth, async (user) => {
         if (user) {
             setUser(user);
@@ -19,3 +19,4 @@ export const subscribeAuthState = (setUser, setIdToken) => {
         }
     })
 }
+  export {subscribeAuthState}
