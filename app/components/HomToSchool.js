@@ -7,13 +7,16 @@ import { subscribeAuthState } from "../services/authService";
 import { fetchStudentPage } from "../services/studentService";
 
 
-export default function HomeToSchoolSidebar({ isOpen, openComponent, onClose, mapRef}) {
+export default function HomeToSchoolSidebar({ isOpen, openComponent, onClose, mapRef, markersData}) {
   if (!isOpen) return null; // ถ้า Sidebar ไม่เปิด ให้คืนค่า null
+
+
+  const studentMax = markersData.length
 
   // const [user, setUser] = useState(null);
   // const [idToken, setIdToken] = useState("");
-  const [numVehicles, setNumVehicles] = useState(7);
-  const [maxStopsPerVehicle, setMaxStopsPerVehicle] = useState(24);
+  const [numVehicles, setNumVehicles] = useState("");
+  const [maxStopsPerVehicle, setMaxStopsPerVehicle] = useState("");
   const [maxTravelTime, setMaxTravelTime] = useState(180);
   // const [studentAll, setStudentAll] = useState([]); // State สำหรับเก็บข้อมูล API
   // const [depotLat, setDepotLat] = useState();
@@ -51,8 +54,7 @@ export default function HomeToSchoolSidebar({ isOpen, openComponent, onClose, ma
 
   const [user, setUser] = useState(null);
   const [idToken, setIdToken] = useState(""); // State สำหรับเก็บ token
-
-
+  
   
 
   
@@ -88,6 +90,7 @@ export default function HomeToSchoolSidebar({ isOpen, openComponent, onClose, ma
 
 // ----------------------------------------------------------------------------
 const [isLoading, setIsLoading] = useState();
+const typePage = "Home To School"
 
 
 const findingRoute = async () => {
@@ -95,14 +98,21 @@ const findingRoute = async () => {
     setIsLoading(true); // เริ่มโหลด
 
     if (mapRef.current) {
-      const { routes, routeColors, routeDistance, routeDuration, Didu} = await mapRef.current.handleSubmit(
+      const { routes, routeColors, routeDistance, routeDuration, Didu, route_type} = await mapRef.current.handleSubmit(
         parseInt(numVehicles),
         parseInt(maxStopsPerVehicle),
         parseInt(maxTravelTime),
-        true
+        true,
+        "home"
       ); 
+
+
+
+      // console.log("นี้เด้อ "+routes  );
+      console.log("นี้เด้อ "+ JSON.stringify(routes, null, 2));
+      
       // openComponent("Route");
-      openComponent("Route", { routes, routeColors, routeDistance, routeDuration, Didu });
+      openComponent("Route", { routes, routeColors, routeDistance, routeDuration, Didu, typePage, route_type});
     }
 
   } catch (error) {
@@ -138,7 +148,7 @@ const findingRoute = async () => {
   const [currentPage, setCurrentPage] = useState(1); // หน้าปัจจุบัน
   const rowsPerPage = 10; // จำนวนแถวต่อหน้า
 
-  const totalPages = Math.ceil(rows.length / rowsPerPage); // คำนวณจำนวนหน้า
+  const totalPages = Math.ceil(markersData.length / rowsPerPage); // คำนวณจำนวนหน้า
   const currentRows = rows.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
@@ -148,6 +158,45 @@ const findingRoute = async () => {
     const rowIndex = (currentPage - 1) * rowsPerPage + index;
     rows[rowIndex].isActive = !rows[rowIndex].isActive;
   };
+
+
+
+  const handleMaxCapacityChange = (e) => {
+    const capacity = parseFloat(e.target.value);
+    if (isNaN(capacity) || capacity <= 0) {
+      setMaxStopsPerVehicle("");
+      setNumVehicles("");
+      return;
+    }
+    setMaxStopsPerVehicle(e.target.value); // เก็บเป็น string
+    let calculated = Math.ceil(studentMax / capacity);
+    if (calculated < 1) {
+      calculated = 1;
+    }
+    setNumVehicles(calculated.toString()); // แปลงเป็น string
+  };
+
+  const handleBusChange = (e) => {
+    const busVal = parseFloat(e.target.value);
+    if (isNaN(busVal) || busVal <= 0) {
+      setNumVehicles("");
+      setMaxStopsPerVehicle("");
+      return;
+    }
+    setNumVehicles(e.target.value); // เก็บเป็น string
+
+    let calculated = Math.ceil(studentMax / busVal);
+    if (calculated < 1) {
+      calculated = 1;
+    }
+    setMaxStopsPerVehicle(calculated.toString()); // แปลงเป็น string
+  };
+  
+  
+  
+  const itemsPerPage = 10;
+const startIndex = (currentPage - 1) * itemsPerPage;
+const currentItems = markersData.slice(startIndex, startIndex + itemsPerPage);
 
 
 
@@ -171,7 +220,7 @@ const findingRoute = async () => {
 
 
         {/* Sticky top */}
-        <div className="sticky top-0 bg-white">
+        <div className="sticky top-0">
           <div className="flex items-center justify-between mt-2 mb-2">
             <h2 className="text-lg font-bold">Home To Schools</h2>
             {/* <button
@@ -194,7 +243,7 @@ const findingRoute = async () => {
               </svg>
             </button> */}
 
-            <button
+              <button
                 type="button"
                 className="flex justify-center items-center gap-x-3 size-6 bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 rounded-[7px] focus:outline-none focus:bg-gray-100 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:hover:text-neutral-200 dark:focus:text-neutral-200"
                 onClick={onClose}
@@ -226,19 +275,8 @@ const findingRoute = async () => {
 
           {/* ช่องกรอกค่า Bus, Max Capacity, Max Time */}
           <div className="flex justify-center gap-3 p-2 m-2 bg-[#f9f9f9]">
-            <div className="flex flex-col text-[12px]">
-              <label>Bus:</label>
-              <input
-                type="number"
-                min="1"
-                required
-                value={numVehicles}
-                onChange={(e) => setNumVehicles(e.target.value)}
-                className={inputClass}
-              />
-            </div>
 
-            <div className="flex flex-col text-[12px]">
+          {/* <div className="flex flex-col text-[12px]">
               <label>Max Capacity:</label>
               <input
                 type="number"
@@ -250,6 +288,46 @@ const findingRoute = async () => {
               />
             </div>
 
+
+            <div className="flex flex-col text-[12px]">
+              <label>Bus:</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={numVehicles}
+                onChange={(e) => setNumVehicles(e.target.value)}
+                className={inputClass}
+              />
+            </div> */}
+
+
+            <div className="flex flex-col text-[12px]">
+              <label>Max Capacity:</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={maxStopsPerVehicle}
+                onChange={handleMaxCapacityChange}
+                className={inputClass}
+              />
+            </div>
+
+            <div className="flex flex-col text-[12px]">
+              <label>Bus:</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={numVehicles}
+                onChange={handleBusChange}
+                className={inputClass}
+              />
+            </div>
+
+
+{/* 
             <div className="flex flex-col text-[12px]">
               <label>Max Time (min):</label>
               <input
@@ -260,11 +338,14 @@ const findingRoute = async () => {
                 onChange={(e) => setMaxTravelTime(e.target.value)}
                 className={inputClass}
               />
-            </div>
+            </div> */}
           </div>
 
           <hr />
-          <p className="mt-3">Students (140)</p>
+
+          <p className="mt-3">Students ({studentMax})</p>
+
+
           <div className="p-2 m-2">
             <div className="relative">
               <input
@@ -291,9 +372,7 @@ const findingRoute = async () => {
           </div>
 
 
-          <div className="mx-auto max-w-screen-sm p-2 sm:p-4 mb-[50px]">
       <div className="shadow-lg rounded-lg overflow-hidden">
-
         <div className="grid grid-cols-3 bg-gray-100 border-b-2 border-gray-300 text-sm font-semibold text-gray-700 tracking-wider uppercase">
           <div className="py-4 px-6 text-left">Name</div>
           <div className="py-4 px-6 text-left">Address</div>
@@ -301,27 +380,28 @@ const findingRoute = async () => {
         </div>
 
         <div className="divide-y divide-gray-200">
-          {currentRows.map((row, i) => (
+          {currentItems.map((marker, i) => (
             <div
-              key={row.id}
+              key={marker.id || i}
               className="grid grid-cols-3 items-center hover:bg-gray-50 transition"
             >
-
               <div className="py-4 px-6 text-sm font-medium text-gray-900">
-                {row.name}
+                {marker.first_name} {marker.last_name}
               </div>
 
-
-              <div className="py-4 text-sm text-gray-500">{row.email}</div>
-
+              <div className="py-4 text-sm text-gray-500">
+                {marker.address}
+              </div>
 
               <div className="py-4 px-6 flex justify-center">
                 <label className="relative inline-block w-12 h-6 cursor-pointer">
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={row.isActive}
-                    onChange={() => toggleStatus(i)}
+                    checked={marker.isActive}
+                    onChange={() => {
+                      // handle status toggle ตามที่คุณต้องการ
+                    }}
                   />
                   <div
                     className="bg-red-500 rounded-full w-full h-full
@@ -342,7 +422,7 @@ const findingRoute = async () => {
         </div>
       </div>
 
-
+      {/* Pagination controls */}
       <div className="flex justify-between mt-4">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -363,7 +443,6 @@ const findingRoute = async () => {
         </button>
       </div>
 
-    </div>
 
 
 

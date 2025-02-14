@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Route Optimize Bro!",
+  title: "SchoolGo",
   description: "Route Optimize",
 };
 

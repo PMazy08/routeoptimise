@@ -43,7 +43,8 @@ const fetchRoutes = async (idToken, map, data) => {
     }, 60000); // 60 วินาที
 
     try {
-        const response = await fetch(`${configService.orToolURL}/vrp/solve_vrp`, {
+        // const response = await fetch(`${configService.orToolURL}/vrp/solve_vrp`, {
+            const response = await fetch(`${configService.orToolURL}/solve`, {
             method: 'POST', // ใช้ POST method
             headers: {
                 'Content-Type': 'application/json', // Content-Type เป็น JSON
@@ -61,7 +62,7 @@ const fetchRoutes = async (idToken, map, data) => {
         // ตรวจสอบว่ามีข้อมูล trips หรือไม่
         if (result && result.trips) {
             console.log("Trips found:", result.trips);
-            return result.trips;
+            // return result.trips;
         } else {
             console.warn("No trips found in API response");
             return [];

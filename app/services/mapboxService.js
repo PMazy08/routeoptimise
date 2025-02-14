@@ -237,9 +237,9 @@ const resetRoute = (map) => {
 
 const drawRoute = async (map, coordinates, routeId, color, isAllRoute) => {
 
-  console.log("************************************************");
-  console.log("length coor in mapSer -> " + coordinates.length);
-  console.log("************************************************");
+  // console.log("************************************************");
+  // console.log("length coor in mapSer -> " + coordinates.length);
+  // console.log("************************************************");
 
   try {
     // ลบ markers เดิมที่มีอยู่ก่อน
@@ -259,12 +259,13 @@ const drawRoute = async (map, coordinates, routeId, color, isAllRoute) => {
         .map(coord => `${coord[1]},${coord[0]}`)
         .join(";");
 
-      console.log("F' mamSer coordinateString--> "+{i}+" "+ coordinateString);
+      // console.log("F' mamSer coordinateString--> "+{i}+" "+ coordinateString);
 
       try {
         // เรียก Directions API สำหรับแต่ละกลุ่ม
         const response = await fetch(
-          `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinateString}?geometries=geojson&overview=full&alternatives=true&access_token=${mapboxgl.accessToken}`
+          // `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinateString}?geometries=geojson&overview=full&alternatives=true&access_token=${mapboxgl.accessToken}`
+          `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinateString}?geometries=geojson&overview=full&alternatives=false&access_token=${mapboxgl.accessToken}`
         );
 
         const data = await response.json();
@@ -274,16 +275,18 @@ const drawRoute = async (map, coordinates, routeId, color, isAllRoute) => {
           const distance = data.routes[0].distance; // ระยะทางในเมตร
           const duration = data.routes[0].duration; // เวลาที่ใช้ในการเดินทาง (หน่วยเป็นวินาที)
 
+
+
           totalDistance += distance; // เพิ่มระยะทางรวม
           totalDuration += duration; // เพิ่มเวลารวม
 
 
-          console.log("----------------------------------------");
-          console.log("F' mapSer "+routeId);
+          // console.log("----------------------------------------");
+          // console.log("F' mapSer "+routeId);
 
-          console.log("Total Distance before initialization:", totalDistance);
-          console.log("Total Duration before initialization:", totalDuration);
-          console.log("----------------------------------------");
+          // console.log("Total Distance before initialization:", totalDistance);
+          // console.log("Total Duration before initialization:", totalDuration);
+          // console.log("----------------------------------------");
 
           // เพิ่มเส้นทางลงใน Mapbox โดยใช้ routeId เพื่อแยกเส้นทาง
           if (map.getSource(`route-${routeId}-${i}`)) {
@@ -315,38 +318,88 @@ const drawRoute = async (map, coordinates, routeId, color, isAllRoute) => {
             });
           }
 
+          // {
+          //   isAllRoute ? null :
+          //     // เพิ่ม Markers สำหรับจุดที่ส่งเข้ามา (coordinates)
+          //     coordinates.forEach((coord, index) => {
+
+          //       // สร้าง Element สำหรับตัวเลข
+          //       const numberLabel = document.createElement("div");
+          //       numberLabel.className = "marker-label";
+          //       numberLabel.innerText = index; // ตัวเลขเริ่มจาก 1
+          //       numberLabel.style.fontSize = "12px"; // ขนาดตัวอักษรที่เหมาะสม
+          //       numberLabel.style.color = "black"; // สีของตัวอักษร
+          //       numberLabel.style.backgroundColor = "#ffffff"; // สีพื้นหลัง
+          //       numberLabel.style.borderRadius = "50%"; // ให้เป็นวงกลม
+          //       numberLabel.style.width = "20px";  // ขนาดหมุด
+          //       numberLabel.style.height = "20px"; // ให้ความสูงเท่าความกว้าง
+          //       numberLabel.style.textAlign = "center"; // ให้ตัวเลขอยู่กลางแนวนอน
+          //       numberLabel.style.lineHeight = "20px"; // ให้ตัวเลขอยู่กลางแนวตั้ง
+          //       numberLabel.style.fontWeight = "bold"; // ความหนาของตัวอักษร
+          //       numberLabel.style.boxShadow = "0 0 5px rgba(0, 0, 0, 0.3)"; // เพิ่มเงาให้ดูสวยงาม
+
+          //       // สร้าง Marker แบบกำหนดเอง
+          //       const markerElement = new mapboxgl.Marker({
+          //         element: numberLabel,
+          //       })
+          //         .setLngLat([coord[1], coord[0]]) // ระบุตำแหน่งพิกัด
+          //         .addTo(map);
+
+          //       // เก็บ reference ของ marker ลงใน markersList
+          //       markersList.push(markerElement);
+          //     });
+
+          // }
+
+
           {
             isAllRoute ? null :
-              // เพิ่ม Markers สำหรับจุดที่ส่งเข้ามา (coordinates)
+              // Start the loop from the second element (index 1)
               coordinates.forEach((coord, index) => {
-                console.log("หมุด");
-
-                // สร้าง Element สำหรับตัวเลข
+          
+                // Skip the first position (index 0)
+                if (index === 0) return;
+          
+                // Create a custom label for all markers except the last one
                 const numberLabel = document.createElement("div");
                 numberLabel.className = "marker-label";
-                numberLabel.innerText = index; // ตัวเลข
-                numberLabel.style.position = "absolute";
-                numberLabel.style.transform = "translate(-50%, -50%)"; // จัดกึ่งกลาง
-                numberLabel.style.fontSize = "14px";
+                numberLabel.style.fontSize = "12px";
                 numberLabel.style.color = "black";
-                numberLabel.style.backgroundColor = "white";
+                numberLabel.style.backgroundColor = "#ffffff";
                 numberLabel.style.borderRadius = "50%";
-                numberLabel.style.padding = "4px 8px"; // เพิ่ม Padding ให้ดูสวยงาม
+                numberLabel.style.width = "20px";
+                numberLabel.style.height = "20px";
+                numberLabel.style.textAlign = "center";
+                numberLabel.style.lineHeight = "20px";
                 numberLabel.style.fontWeight = "bold";
                 numberLabel.style.boxShadow = "0 0 5px rgba(0, 0, 0, 0.3)";
-
-                // สร้าง Marker แบบกำหนดเอง
-                const markerElement = new mapboxgl.Marker({
-                  element: numberLabel,
-                })
-                  .setLngLat([coord[1], coord[0]]) // ระบุตำแหน่งพิกัด
-                  .setPopup(new mapboxgl.Popup().setText(`Point ${index}`))
-                  .addTo(map);
-
-                // เก็บ reference ของ marker ลงใน markersList
+          
+                let markerElement;
+          
+                // For the last marker, create a red marker
+                if (index === coordinates.length - 1) {
+                  // Normal marker (default style with red color)
+                  markerElement = new mapboxgl.Marker({ color: "red" })
+                    .setLngLat([coord[1], coord[0]]) // Set the position
+                    .addTo(map);
+                } else {
+                  // Custom marker with label for other coordinates
+                  numberLabel.innerText = index; // Start numbering from 0 (skipping the first marker)
+                  markerElement = new mapboxgl.Marker({
+                    element: numberLabel,
+                  })
+                    .setLngLat([coord[1], coord[0]]) // Set the position
+                    .addTo(map);
+                }
+          
+                // Store reference of the marker in markersList
                 markersList.push(markerElement);
               });
           }
+          
+          
+
+          
 
         } else {
           console.log(`!!!!!No route found for chunk`);
@@ -369,10 +422,11 @@ const drawRoute = async (map, coordinates, routeId, color, isAllRoute) => {
       distance: distanceInKm, // ระยะทางเป็นกิโลเมตร
       duration: durationInMin, // ระยะเวลาเป็นนาที
     };
-    console.log("#########################################");
-    console.log("OUT mapSer!!!"); 
-    console.log(result);
-    console.log("#########################################");
+
+    // console.log("#########################################");
+    // console.log("OUT mapSer!!!"); 
+    // console.log(result);
+    // console.log("#########################################");
 
     return result
   } catch (error) {
@@ -408,62 +462,5 @@ const fetchMarkers = async (idToken) => {
 
 
 
-
-
-
-
-
-const fetchRoutes = async (idToken, map, data) => {
-    // console.log("Fetching Trips and Drawing Routes...");
-    try {
-      const response = await fetch(`${configService.orToolURL}/vrp/solve_vrp`, {
-        method: 'POST', // ใช้ POST method
-        headers: {
-          'Content-Type': 'application/json', // Content-Type เป็น JSON
-        },
-        body: JSON.stringify(data), // ส่ง data ใน body
-      });
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-  
-      const result = await response.json();
-  
-      // ตรวจสอบว่ามีข้อมูล trips หรือไม่
-      if (result && result.trips) {
-        // console.log("Trips found:", result.trips);
-        return result.trips;
-      } else {
-        console.warn("No trips found in API response");
-        return [];
-      }
-    } catch (error) {
-      console.error("Error fetching trips from API:", error);
-      return [];
-    }
-  };
-
-// ฟังก์ชันสำหรับสุ่มสีแบบ Hex
-// function getRandomHexColor() {
-//     const letters = '0123456789ABCDEF';
-//     let color = '#';
-//     for (let i = 0; i < 6; i++){
-//         color += letters[Math.floor(Math.random() *16)];
-//     }
-//     // console.log("-->"+color);
-//     return color; 
-// }
-
-function getRandomHexColor() {
-  const getRandomValue = () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
-  const r = getRandomValue(); // สีแดง
-  const g = getRandomValue(); // สีเขียว
-  const b = getRandomValue(); // สีน้ำเงิน
-  
-  const color = `#${r}${g}${b}`;
-  return color;
-}
-
-export {drawRoute, getRandomHexColor, fetchMarkers, resetRoute, fetchRoutes}
+export {drawRoute, fetchMarkers, resetRoute}
 

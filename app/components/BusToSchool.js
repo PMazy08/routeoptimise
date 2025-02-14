@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
+import { stringify } from 'flatted';
+
 // import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
-export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElements}) {
+export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElements, onRadiusValuesChange, openComponent}) {
 
   if (!isOpen) return null; // ถ้า Sidebar ไม่เปิด ให้คืนค่า null
 
@@ -11,22 +13,58 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
   const [maxStopsPerVehicle, setMaxStopsPerVehicle] = useState(20);
   const [maxTravelTime, setMaxTravelTime] = useState(150);
 
+
   const elements = mapElements || [];
+  // console.table(elements);
+
+  
+
+  // const [isOpenDD, setIsOpenDD] = useState(false);
+
+  // const toggleDropdown = () => {
+  //   setIsOpenDD((prev) => !prev);
+  // };
+
+
+  const [openDropdown, setOpenDropdown] = useState(null);
+
+  const toggleDropdown = (id) => {
+    setOpenDropdown((prev) => (prev === id ? null : id));
+  };
 
 
 
   const [rows, setRows] = useState([
-    // { id: 1, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
-    // { id: 2, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
-    // { id: 3, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
-    // { id: 4, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
-    // { id: 5, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
-    // { id: 6, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
-    // { id: 7, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
-    // { id: 8, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
-    // { id: 9, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
-    // { id: 10, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
+    { id: 1, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
+    { id: 2, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
+    { id: 3, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
+    { id: 4, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
+    { id: 5, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
+    { id: 6, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
+    { id: 7, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
+    { id: 8, name: "Jane Doe", email: "janedoe@gmail.com", phone: "555-555-5555", isActive: false },
+    { id: 9, name: "Mark Smith", email: "marksmith@gmail.com", phone: "444-444-4444", isActive: true },
+    { id: 10, name: "John Doe", email: "johndoe@gmail.com", phone: "555-555-5555", isActive: true },
   ]);
+
+
+
+  const busStopsData = [
+    { id: 1, name: "Bus Stop 1", students: ["Student 1", "Student 2", "Student 3"] },
+    { id: 2, name: "Bus Stop 2", students: ["Student 4", "Student 5"] },
+    { id: 3, name: "Bus Stop 3", students: ["Student 6", "Student 7", "Student 8", "Student 9"] },
+    { id: 4, name: "Bus Stop 4", students: [] },
+    { id: 5, name: "Bus Stop 5", students: ["Student 1", "Student 2", "Student 3"] },
+    { id: 6, name: "Bus Stop 6", students: ["Student 4", "Student 5"] },
+    { id: 7, name: "Bus Stop 7", students: ["Student 6", "Student 7", "Student 8", "Student 9"] },
+    { id: 8, name: "Bus Stop 8", students: [] },
+  ];
+
+
+
+
+
+
 
   // toggleStatus (สลับ Active/Inactive)
   const toggleStatus = (index) => {
@@ -50,24 +88,26 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
   const [fields, setFields] = useState([]); // เก็บข้อมูล input
   const [showFields, setShowFields] = useState(false); // ควบคุมการแสดง input และปุ่ม Clear
   const [radiusValues, setRadiusValues] = useState([]); // สำหรับจัดการ radius ของแต่ละ field
+  const [showFields2, setShowFields2] = useState(true);
 
   const [isButtonDisabled, setIsButtonDisabled] = useState(false); // สถานะปุ่ม
 
   const handleAddInput = async () => {
+    
     setIsButtonDisabled(true); // ปิดปุ่มเมื่อกำลังเพิ่มข้อมูล
-  
+    
     // แสดง fields ทันที
     setShowFields(true);
   
     // เพิ่มฟิลด์ว่างๆ ทันที
     setFields((prevFields) => [...prevFields, ""]);
-    setRadiusValues([...radiusValues, 1]);
+    setRadiusValues([...radiusValues, 0.5]);
   
     // รอให้ผู้ใช้คลิกแผนที่และอัปเดตข้อมูล
-    await addInput();
-  
+    await addInput();  // แก้ไขให้เป็น await เพื่อรอให้ฟังก์ชันทำงานเสร็จ
+
     setIsButtonDisabled(false); // เปิดปุ่มอีกครั้งเมื่อ addInput เสร็จ
-  };
+};
   
   const addInput = async () => {
     if (mapRef.current) {
@@ -101,6 +141,7 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
     if (mapRef.current) {
       mapRef.current.removeElement(idx); // เรียก removeElement ผ่าน ref
     }
+    setIsButtonDisabled(false)
   };
 
   
@@ -132,6 +173,9 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
     if (mapRef.current) {
       mapRef.current.clearAllElements()
     }
+    setRadiusValues([])
+    setIsButtonDisabled(false)
+    setShowFields2(true)
   };
 
   const handleChange = (idx, value) => {
@@ -211,18 +255,117 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
 
 
 
-  const handleChangeRadius = (idx, value) => {
-    if (/^\d*\.?\d{0,1}$/.test(value)) {
-      const updatedRadius = [...radiusValues];
-      updatedRadius[idx] = value; // อัปเดตค่า radius ของ field นั้น
-      setRadiusValues(updatedRadius);
+  // const handleChangeRadius = (idx, value) => {
+  //   if (/^\d*\.?\d{0,1}$/.test(value)) {
+  //     const updatedRadius = [...radiusValues];
+  //     updatedRadius[idx] = value; // อัปเดตค่า radius ของ field นั้น
+  //     setRadiusValues(updatedRadius);
 
-      // ส่งค่า radius ไปยัง Map เพื่ออัปเดตวงกลม
+  //     // ส่งค่า radius ไปยัง Map เพื่ออัปเดตวงกลม
+  //     if (mapRef.current) {
+  //       mapRef.current.updateCircleRadius(idx, parseFloat(value));  // ส่งไปยัง Map
+  //     }
+  //     // ส่งค่าผ่าน props ไปยัง Parent Component (Sidebar)
+  //     onRadiusValuesChange(updatedRadius); // ส่งค่ากลับไป
+  //   }
+  // };
+
+
+  const handleChangeRadius = (idx, value) => {
+    // ตรวจสอบ input ให้แน่ใจว่าเป็นตัวเลขในรูปแบบที่ต้องการ (ทศนิยมไม่เกิน 1 ตำแหน่ง)
+    if (/^\d*\.?\d{0,1}$/.test(value)) {
+      // อัปเดต state ของ radiusValues
+      const updatedRadius = [...radiusValues];
+      updatedRadius[idx] = value;
+      setRadiusValues(updatedRadius);
+  
+      // ส่งค่าใหม่ไปยัง Map component โดยเรียกใช้ฟังก์ชันที่ mapRef expose (updateCircleRadius)
       if (mapRef.current) {
-        mapRef.current.updateCircleRadius(idx, parseFloat(value));  // ส่งไปยัง Map
+        mapRef.current.updateCircleRadius(idx, parseFloat(value));
+      }
+  
+      // (ถ้ามี) ส่งค่ากลับไปยัง Parent Component ผ่าน props
+      if (typeof onRadiusValuesChange === "function") {
+        onRadiusValuesChange(updatedRadius);
       }
     }
   };
+  
+
+
+  const toClose = () => {
+    setFields([]); // ลบ input ทั้งหมด
+    setShowFields(false); // ซ่อน input และปุ่ม Clear
+    if (mapRef.current) {
+      mapRef.current.clearAllElements();
+    }
+    setRadiusValues([]);
+    setIsButtonDisabled(false);
+    onClose();
+  };
+
+
+  const findAuto = () =>{
+    if (mapRef.current) {
+      mapRef.current.handleFindAuto();
+    }
+    setShowFields(true);
+    setShowFields2(false)
+  }
+
+
+
+
+
+
+
+  const [isLoading, setIsLoading] = useState();
+  const typePage = "Bus To School"
+
+
+  const findingRoute = async () => {
+    try {
+      setIsLoading(true); // เริ่มโหลด
+
+      if (mapRef.current) {
+        const { routes, routeColors, routeDistance, routeDuration, Didu, route_type, bus_SP } = await mapRef.current.handleSubmit(
+          parseInt(numVehicles),
+          parseInt(maxStopsPerVehicle),
+          parseInt(maxTravelTime),
+          true,
+          "bus"
+        );
+        // openComponent("Route");
+        openComponent("Route", { routes, routeColors, routeDistance, routeDuration, Didu, typePage, route_type, bus_SP });
+      }
+
+    } catch (error) {
+      console.error("Error in findingRoute:", error);
+    } finally {
+      setIsLoading(false); // สิ้นสุดโหลด
+    }
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   ///-----------------------------------------------------------
   return (
@@ -238,10 +381,11 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
       <div className="h-full flex flex-col px-3 pb-0">
 
         {/* Sticky top */}
-        <div className="sticky top-0 bg-gray-100">
+        <div className="sticky top-0">
           <div className="flex items-center justify-between mt-2 mb-2">
             <h2 className="text-lg font-bold">Bus To Schools</h2>
-            <button
+
+            {/* <button
               onClick={() => {
                 onClose()
                 clearAll()
@@ -262,6 +406,30 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
                   d="M6 18 18 6M6 6l12 12"
                 />
               </svg>
+            </button> */}
+
+
+            <button
+              type="button"
+              className="flex justify-center items-center gap-x-3 size-6 bg-white border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 rounded-[7px] focus:outline-none focus:bg-gray-100 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:focus:bg-neutral-700 dark:hover:text-neutral-200 dark:focus:text-neutral-200"
+              onClick={() => toClose()}
+            >
+              <svg
+                className="shrink-0 size-4"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+              {/* <span className="sr-only">Close</span> */}
             </button>
           </div>
         </div>
@@ -276,14 +444,19 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
           <div className="p-4">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-lg font-semibold">Bus Stops</h2>
-              {showFields && (
+
+              {showFields ? (
                 <button
                   onClick={clearAll}
-                  className="bg-red-500 text-white px-2 py-1 rounded 
+                  className="bg-red-500 text-white px-2 py-1 rounded-md 
                hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 
-               text-sm"
+               text-md"
                 >
                   Clear All
+                </button>
+              ) : (
+                <button onClick={findAuto} className="px-2 py-1  bg-blue-400 rounded-md text-md text-white">
+                  Find Auto
                 </button>
               )}
             </div>
@@ -340,12 +513,40 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
             )}
 
 
-<button
+            {/* <button
+              onClick={handleAddInput}
+              disabled={isButtonDisabled} // ปิดการใช้งานปุ่มถ้ากดแล้ว
+              className={`${isButtonDisabled ? "text-gray-400" : "text-blue-600 hover:text-blue-700"
+                } text-sm flex justify-items-center mr-1`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                className="size-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                />
+              </svg>
+              {isButtonDisabled ? "Add" : "Add "}
+            </button> */}
+
+
+
+
+
+
+{showFields2 && (
+  <button
   onClick={handleAddInput}
   disabled={isButtonDisabled} // ปิดการใช้งานปุ่มถ้ากดแล้ว
-  className={`${
-    isButtonDisabled ? "text-gray-400" : "text-blue-600 hover:text-blue-700"
-  } text-sm flex justify-items-center mr-1`}
+  className={`${isButtonDisabled ? "text-gray-400" : "text-blue-600 hover:text-blue-700"
+    } text-sm flex justify-items-center mr-1`}
 >
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -355,14 +556,17 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
     stroke="currentColor"
     className="size-5"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-    />
+      <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+      />
   </svg>
-  {isButtonDisabled ? "Add" : "Add"}
+  {isButtonDisabled ? "Adding..." : "Add "}
 </button>
+)}
+
+
 
 
       
@@ -394,7 +598,8 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
 
         {/* ช่องกรอกค่า Bus, Max Capacity, Max Time */}
         <div className="flex justify-center gap-3 p-2 m-2 bg-[#f9f9f9]">
-          <div className="flex flex-col text-[12px]">
+
+          {/* <div className="flex flex-col text-[12px]">
             <label>Bus:</label>
             <input
               type="number"
@@ -404,10 +609,10 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
               onChange={(e) => setNumVehicles(e.target.value)}
               className={inputClass}
             />
-          </div>
+          </div> */}
 
-          <div className="flex flex-col text-[12px]">
-            <label>Max Capacity:</label>
+          <div className="flex text-[12px] items-center">
+            <label>Seats:</label>
             <input
               type="number"
               min="1"
@@ -418,7 +623,7 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
             />
           </div>
 
-          <div className="flex flex-col text-[12px]">
+          {/* <div className="flex flex-col text-[12px]">
             <label>Max Time (min):</label>
             <input
               type="number"
@@ -428,75 +633,125 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
               onChange={(e) => setMaxTravelTime(e.target.value)}
               className={inputClass}
             />
-          </div>
+          </div> */}
+
         </div>
 
 
         <hr />
-        <p className="mt-3">Students (140)</p>
-        <input className="mt-3 border border-gray-300 rounded p-1" />
-
-        {/* ส่วนตาราง */}
+{/* 
         <div className="mx-auto max-w-screen-sm p-2 sm:p-4 mb-[50px]">
-          <div className="shadow-lg rounded-lg overflow-hidden">
-            <table className="w-full table-fixed text-xs">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="w-1/4 py-2 px-2 text-left text-gray-600 font-bold uppercase">
-                    Name
-                  </th>
-                  <th className="w-1/4 py-2 px-2 text-left text-gray-600 font-bold uppercase">
-                    Email
-                  </th>
-                  <th className="w-1/4 py-2 px-2 text-left text-gray-600 font-bold uppercase">
-                    Phone
-                  </th>
-                  <th className="w-1/4 py-2 px-2 text-left text-gray-600 font-bold uppercase">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {rows.map((row, i) => (
-                  <tr key={row.id}>
-                    <td className="py-2 px-2 border-b border-gray-200">{row.name}</td>
-                    <td className="py-2 px-2 border-b border-gray-200 truncate">{row.email}</td>
-                    <td className="py-2 px-2 border-b border-gray-200">{row.phone}</td>
-                    <td className="py-2 px-2 border-b border-gray-200">
-                      <label className="relative inline-block w-10 h-5 select-none">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={row.isActive}
-                          onChange={() => toggleStatus(i)}
-                        />
-                        <div
-                          className="absolute cursor-pointer top-0 left-0 right-0 bottom-0
-                                   bg-red-500 rounded-full
-                                   peer-checked:bg-green-500
-                                   peer-focus:ring-2 peer-focus:ring-blue-500
-                                   transition-colors duration-300"
-                        />
-                        <div
-                          className="absolute left-0 top-0 w-5 h-5 bg-white rounded-full
-                                   border border-gray-300
-                                   transform transition-transform duration-300
-                                   peer-checked:translate-x-5"
-                        />
-                      </label>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="w-full space-y-2">
+              {fields.map((busStop, index) => (
+                <div key={busStop} className="w-full">
+                  <button
+                    type="button"
+                    // onClick={() => toggleDropdown(busStop.id)}
+                    className="w-full text-white bg-gray-400 justify-between flex h-10 rounded-lg text-sm px-5 py-2.5 items-center"
+                  >
+                    <p>Bus Stop # {index+1} (pax)</p>
+                    <svg
+                      className="w-2.5 h-2.5 ms-3"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 10 6"
+                    >
+                      <path
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="m1 1 4 4 4-4"
+                      />
+                    </svg>
+                  </button>
+
+                  {openDropdown === busStop.id && (
+                    <div className="bg-gray-100 divide-y divide-gray-300 rounded-lg shadow-sm w-full dark:bg-gray-700">
+                      <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+                        {busStop.students.length > 0 ? (
+                          busStop.students.map((student, index) => (
+                            <li key={index} className="block px-4 py-2 hover:bg-gray-300 dark:hover:bg-gray-600 dark:hover:text-white">
+                              {student}
+                            </li>
+                          ))
+                        ) : (
+                          <li className="block px-4 py-2 text-gray-500">No students</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                </div>
+              ))}
+            </div>
+        </div>  */}
+
+
+
+<div className="mx-auto max-w-screen-sm p-2 sm:p-4 mb-[50px]">
+  <div className="w-full space-y-2">
+    {elements.map((busStop, index) => (
+      <div key={busStop.circleId} className="w-full">
+        <button
+          type="button"
+          onClick={() => toggleDropdown(busStop.circleId)}
+          className="w-full bg-blue-300 justify-between flex h-10 rounded-lg text-sm px-5 py-2.5 items-center text-black"
+        >
+          <p>
+            <strong>Bus Stop #{index + 1} </strong> ({busStop.students.length} pax) 
+          </p>
+          <svg
+            className="w-2.5 h-2.5 ms-3"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 10 6"
+          >
+            <path
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="m1 1 4 4 4-4"
+            />
+          </svg>
+        </button>
+
+        {openDropdown === busStop.circleId && (
+          <div className="bg-white divide-y divide-gray-300 rounded-lg shadow-sm w-full dark:bg-gray-700">
+            <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+              {busStop.students && busStop.students.length > 0 ? (
+                busStop.students.map((student, idx) => (
+                  <li
+                    key={idx}
+                    className="block px-4 py-2 hover:bg-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >
+                    {student.student_id} {student.first_name} {student.last_name}
+                  </li>
+                ))
+              ) : (
+                <li className="block px-4 py-2 text-gray-500">No students</li>
+              )}
+            </ul>
           </div>
-        </div>
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
+
+
+
+
         </div>
 
         {/* จุดสำคัญ: sticky bottom-0 */}
         <div className="mt-auto sticky bottom-0 left-0 right-0 bg-gray-100 border-t pt-2 pb-[20px]">
           <button
-            onClick={onClose}
+            onClick={findingRoute}
             className="mt-4 w-full bg-green-500 text-white p-2 rounded hover:bg-green-700"
           >
             Optimize Routes

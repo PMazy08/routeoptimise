@@ -24,9 +24,78 @@ const fetchMapCenter = async (idToken) => {
       }
     } catch (error) {
         return [11, 11];
-        console.error("Error fetching marker data: ", error);
     }
   };
 
 
-export {fetchMapCenter};
+const fetchSchool = async (idToken) => {
+    try {
+      const response = await fetch(`${configService.baseURL}/api/schools`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`, // ส่ง token ใน headers
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        return data; 
+      } else {
+        return;
+      }
+    } catch (error) {
+        return;
+  };
+}
+
+
+// ฟังก์ชันสำหรับบันทึก Trip
+const createSchool = async (idToken, dataSchool) => {
+  try {
+    const response = await fetch(`${configService.baseURL}/api/schools`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}` // ใช้ token ถ้ามี Authentication
+      },
+      body: JSON.stringify(dataSchool)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save trip: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error saving trip:", error);
+    throw error;
+  }
+};
+
+
+
+const updateSchool = async (idToken, schoolId, schoolData) => {
+  try {
+    const response = await fetch(`${configService.baseURL}/api/schools/${schoolId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`
+      },
+      body: JSON.stringify(schoolData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update school: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating school:", error);
+    throw error;
+  }
+};
+
+
+export {fetchMapCenter, fetchSchool, createSchool, updateSchool};

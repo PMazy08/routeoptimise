@@ -59,6 +59,13 @@ export default function Home() {
 
       router.push("/map");
     } catch (error) {
+      // ถ้าเกิดข้อผิดพลาดจากรหัสผ่านผิด
+      if (error.code === 'auth/wrong-password') {
+        alert("Incorrect password. Please try again."); // แสดงข้อความเตือน
+      } else {
+        console.error(error.message);
+        setError("An error occurred. Please try again later.");
+      }
     }
   };
 

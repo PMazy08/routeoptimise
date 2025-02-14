@@ -38,7 +38,44 @@ const fetchStudentAll = async (idToken) => {
     
   };
 
-  export {fetchStudentAll, fetchStudentPage};
+
+
+  const fetchStudentBatchData = async (idToken, coordinates) => {
+    try {
+      // สร้าง URL
+      const url = `${configService.baseURL}/api/students/lnglat/batch`;
+  
+      // เรียก API ด้วย fetch
+      const response = await fetch(url, {
+        method: 'POST', // ใช้ POST method
+        headers: {
+          'Authorization': `Bearer ${idToken}`, // เพิ่ม Bearer token ใน headers
+          'Content-Type': 'application/json', // ระบุว่าเนื้อหาเป็น JSON
+        },
+        body: JSON.stringify(coordinates), // ส่งพิกัดหลายชุดใน body
+      });
+  
+      // ตรวจสอบสถานะการตอบกลับ
+      if (!response.ok) {
+        // หากไม่สำเร็จ ขว้างข้อผิดพลาดพร้อมสถานะ
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch data from API (status: ${response.status}): ${errorText}`);
+      }
+  
+      // แปลง response เป็น JSON
+      const data = await response.json();
+      return data; // ส่งข้อมูลที่ได้กลับไป
+    } catch (error) {
+      // ดักจับข้อผิดพลาดที่เกิดขึ้น
+      console.error("Error fetching batch student data: ", error);
+      throw error; // ขว้างข้อผิดพลาดออกไปเพื่อให้ caller จัดการ
+    }
+  };
+  
+
+  
+
+  export {fetchStudentAll, fetchStudentPage, fetchStudentBatchData};
 
 
 
