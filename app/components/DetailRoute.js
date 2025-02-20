@@ -23,18 +23,29 @@ export default function DetailRouteSidebar({ route, routeIndex, color, distance,
 
   useEffect(() => {
     const allCoordinates = [];
-    if (route_type === "home") {
+    if (route_type === "home" || route_type === "import-home") {
       if (route && typeof route === "object") {
         Object.entries(route).forEach(([key, value]) => {
           if (Array.isArray(value)) {
-            value.forEach((coordinate) => {
+            // ตัดเอา element ที่ index 0 และ index สุดท้ายออก แล้ววนลูปส่วนที่เหลือ
+            value.slice(1, -1).forEach((coordinate) => {
               const [lat, lng] = coordinate;
               allCoordinates.push({ lat, lng });
             });
           }
         });
       }
-    } else {
+    } else if(route_type === "import-bus") {
+      if (route && typeof route === "object") {
+        if (Array.isArray(route.student_bus)) {
+          route.student_bus.forEach((coordinate) => {
+            const [lat, lng] = coordinate;
+            // เพิ่มข้อมูลลง allCoordinates โดยไม่ต้องตรวจสอบซ้ำ (ถ้าต้องการตรวจสอบก็เพิ่มเงื่อนไขตามที่คุณต้องการ)
+            allCoordinates.push({ lat, lng });
+          });
+        }
+      }
+    }else {
       if (bus_SP && typeof bus_SP === "object") {
         Object.entries(bus_SP).forEach(([key, value]) => {
           if (Array.isArray(value)) {
@@ -48,6 +59,7 @@ export default function DetailRouteSidebar({ route, routeIndex, color, distance,
     }
   
     setCoordinates(allCoordinates);
+    console.log("Coordinates this ->>:", allCoordinates);
     console.log("Coordinates length:", allCoordinates.length);
   }, [route, route_type, bus_SP]);
   
@@ -157,9 +169,11 @@ export default function DetailRouteSidebar({ route, routeIndex, color, distance,
                   justifyContent: "center",
                 }}
               >
-                <p className="">
-                  {data.first_name} {data.last_name}
-                </p>
+                <div className="flex w-full mx-5 items-center space-x-6">
+                  <p>{data.student_id}</p>
+                  <p>{data.first_name} {data.last_name}</p>
+                  {/* <p>{data.latitude}</p> */}
+                </div>
               </div>
             ))}
           </div>

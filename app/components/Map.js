@@ -2908,7 +2908,7 @@ const removeElement = (idx) => {
         // console.log("route ที่ได้ "+ JSON.stringify(result, null, 2));
         console.log("route ที่ได้ "+ result);
        
-        route_type = "home"
+        // route_type = "home"
         colors = result.map(() => getRandomHexColor());
         // setRouteColors(colors);
 
@@ -3013,60 +3013,84 @@ const removeElement = (idx) => {
         let trips = [];
         let busStudentPositions = [];
 
-        // สำหรับ fullUnits: แต่ละ unitสร้าง routeแบบ round-trip: depot -> [lat, lng] -> depot
-        fullUnits.forEach((unit) => {
+        // สำหรับ fullUnits: แต่ละ unit สร้าง route แบบ round-trip: depot -> [lat, lng] -> depot
+        fullUnits.forEach((unit, index) => {
+          const routeName = `route ${trips.length + 1}`;
+          const busName = `student_bus`;
+
           trips.push({
-            [`route ${trips.length + 1}`]: [
+            [routeName]: [
               depot,
               [unit.lat, unit.lng],
-              depot,
+              depot
             ],
+            [busName]: unit.studentPositions && unit.studentPositions.length > 0
+              ? unit.studentPositions.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])
+              : []
           });
+
           busStudentPositions.push({
-            [`bus ${busStudentPositions.length + 1}`]: unit.studentPositions,
+            [busName]: unit.studentPositions && unit.studentPositions.length > 0
+              ? unit.studentPositions.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])
+              : []
           });
         });
 
-        // สำหรับแต่ละกลุ่มใน combinedGroups: สร้าง routeโดยรวมทุก unitในกลุ่ม
-        combinedGroups.forEach((item) => {
+        // สำหรับแต่ละกลุ่มใน combinedGroups: สร้าง route โดยรวมทุก unit ในกลุ่ม
+        combinedGroups.forEach((item, index) => {
+          const routeName = `route ${trips.length + 1}`;
+          const busName = `student_bus`;
+
           const routeCoordinates = [
             depot,
             ...item.group.map((unit) => [unit.lat, unit.lng]),
-            depot,
+            depot
           ];
-          trips.push({ [`route ${trips.length + 1}`]: routeCoordinates });
+
+          trips.push({
+            [routeName]: routeCoordinates,
+            [busName]: item.studentPositions && item.studentPositions.length > 0
+              ? item.studentPositions.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])
+              : []
+          });
+
           busStudentPositions.push({
-            [`bus ${busStudentPositions.length + 1}`]: item.studentPositions,
+            [busName]: item.studentPositions && item.studentPositions.length > 0
+              ? item.studentPositions.map(pos => [parseFloat(pos[0]), parseFloat(pos[1])])
+              : []
           });
         });
 
         const data = { trips, busStudentPositions };
+
         result = data.trips;
         bus_sp = data.busStudentPositions;
-        // console.log("Routes: ", JSON.stringify(data.trips, null, 2));
-        // console.log("Bus: ", JSON.stringify(data.busStudentPositions, null, 2));
 
-        route_type = "bus"
+        // แสดงผลลัพธ์ที่ได้
+        console.log("Bus_res: ", JSON.stringify(result, null, 2));
+        console.log("Bus_sp: ", JSON.stringify(bus_sp, null, 2));
+        
+
+        // route_type = "bus"
         colors = result.map(() => getRandomHexColor());
         
       }
       else if(findBy === "his"){
         result = await fetchRouteByTripId(idToken, trip_id);
 
-        console.log("HIS "+ result);
+        // console.log("HIS "+ JSON.stringify(result.trips, null, 2));
 
         // colors = result.map(() => getRandomHexColor());
         colors = result.map(route => route.color);
-        console.log("this color"+colors);
+        // console.log("this color"+colors);
         
       }else if(findBy === "import"){
         result = roteImport;
 
-        console.log("import "+ result);
-        
-    
+        // console.log("import "+ result);
+
         colors = result.map(route => route.color);
-        console.log("this color"+colors);
+        // console.log("this color"+colors);
         
       }else {
 
@@ -3103,17 +3127,17 @@ const removeElement = (idx) => {
       // console.log("this route Befor send: "+ result);
       // console.log("bus to school student: -> ", mapElements);
 
-      const studentsPerCircle = mapElements.map(element => {
-        return {
-          students: element.students || [] 
-        };
-      });
+      // const studentsPerCircle = mapElements.map(element => {
+      //   return {
+      //     students: element.students || [] 
+      //   };
+      // });
       
-      console.log("Students per circle:", studentsPerCircle);
+      // console.log("Students per circle:", studentsPerCircle);
 
       
 
-      return { routes: result, routeColors: colors, routeDistance: distance, routeDuration: duration, Didu: JSON.stringify(diduArray, null, 2), route_type: route_type, bus_SP: bus_sp, student_inBus: studentsPerCircle };
+      return { routes: result, routeColors: colors, routeDistance: distance, routeDuration: duration, Didu: JSON.stringify(diduArray, null, 2), route_type: findBy, bus_SP: bus_sp,};
 
     } catch (error) {
       console.error("Error drawing routes:", error);

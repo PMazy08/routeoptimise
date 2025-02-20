@@ -9,6 +9,9 @@ import FindingOverlay from '../modals/FindingModal'; // นำเข้า Compo
 import DeleteModal from "../modals/ConfirmationModal";
 import NotificationModal from "../modals/NotificationModal";
 
+
+import { revalidatePath } from "next/cache";
+
 export default function HistoryRouteSidebar({ isOpen, onClose, openComponent, mapRef }) {
   if (!isOpen) return null; // ถ้า Sidebar ไม่เปิด ให้คืนค่า null
 
@@ -55,10 +58,18 @@ export default function HistoryRouteSidebar({ isOpen, onClose, openComponent, ma
 
   const [isLoading, setIsLoading] = useState();
   const typePage = "history"
-  const route_type = "home"
+  let route_type = '';
 
-  const findingRouteByTripId = async (trips_id) => {
-    console.log("TRIP: ", trips_id);
+  const findingRouteByTripId = async (trips_id, routeType) => {
+    console.log("TRIP ID: ", trips_id);
+    console.log("TRIP TYPE: ", routeType);
+    if (routeType === "Home To School"){
+      route_type = 'import-home'
+    }else{
+      route_type = 'import-bus'
+    }
+
+
     
     try {
       setIsLoading(true); // เริ่มโหลด
@@ -137,6 +148,7 @@ export default function HistoryRouteSidebar({ isOpen, onClose, openComponent, ma
 
 
       await fetchTripsAgain(); // รีโหลดรายการ trip
+      revalidatePath("/map")
     } catch (error) {
       console.error("Error deleting trip:", error);
       alert("Failed to delete trip! Check the console for more details.");
@@ -225,7 +237,7 @@ export default function HistoryRouteSidebar({ isOpen, onClose, openComponent, ma
                 className={`cursor-pointer border-t border-gray-200 hover:bg-gray-100 transition-all`}
               >
                 <div className="px-4 py-5 sm:px-6">
-                  <div onClick={() => findingRouteByTripId(trip.id)} className="flex items-center justify-between">
+                  <div onClick={() => findingRouteByTripId(trip.id, trip.types)} className="flex items-center justify-between">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">
                       <div>
                         <div className="mb-[10px]">

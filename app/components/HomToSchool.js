@@ -409,11 +409,6 @@ const currentItems = markersData.slice(startIndex, startIndex + itemsPerPage);
                     peer-focus:ring-2 peer-focus:ring-blue-500
                     transition-colors duration-300"
                   >
-                    <div
-                      className="absolute top-0.5 left-0.5 bg-white rounded-full w-5 h-5
-                      transform transition-transform duration-300
-                      peer-checked:translate-x-6"
-                    />
                   </div>
                 </label>
               </div>
@@ -442,10 +437,6 @@ const currentItems = markersData.slice(startIndex, startIndex + itemsPerPage);
           Next
         </button>
       </div>
-
-
-
-
         </div>
 
         {isLoading && <FindingOverlay />}

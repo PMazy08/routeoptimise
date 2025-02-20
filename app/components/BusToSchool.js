@@ -93,7 +93,7 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
   const [isButtonDisabled, setIsButtonDisabled] = useState(false); // สถานะปุ่ม
 
   const handleAddInput = async () => {
-    
+
     setIsButtonDisabled(true); // ปิดปุ่มเมื่อกำลังเพิ่มข้อมูล
     
     // แสดง fields ทันที
@@ -347,23 +347,9 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
   };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  const goMarker = (id) => {
+    mapRef.current.goMarkerById(id); 
+  };
 
 
 
@@ -541,30 +527,30 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
 
 
 
-{showFields2 && (
-  <button
-  onClick={handleAddInput}
-  disabled={isButtonDisabled} // ปิดการใช้งานปุ่มถ้ากดแล้ว
-  className={`${isButtonDisabled ? "text-gray-400" : "text-blue-600 hover:text-blue-700"
-    } text-sm flex justify-items-center mr-1`}
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth="1.5"
-    stroke="currentColor"
-    className="size-5"
-  >
-      <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-      />
-  </svg>
-  {isButtonDisabled ? "Adding..." : "Add "}
-</button>
-)}
+            {showFields2 && (
+              <button
+              onClick={handleAddInput}
+              disabled={isButtonDisabled} // ปิดการใช้งานปุ่มถ้ากดแล้ว
+              className={`${isButtonDisabled ? "text-gray-400" : "text-blue-600 hover:text-blue-700"
+                } text-sm flex justify-items-center mr-1`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                className="size-5"
+              >
+                  <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                  />
+              </svg>
+              {isButtonDisabled ? "Adding..." : "Add "}
+            </button>
+            )}
 
 
 
@@ -725,6 +711,7 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
               {busStop.students && busStop.students.length > 0 ? (
                 busStop.students.map((student, idx) => (
                   <li
+                    onClick={() => goMarker(student.id)}
                     key={idx}
                     className="block px-4 py-2 hover:bg-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
                   >
@@ -741,9 +728,6 @@ export default function BusToSchoolSidebar({ isOpen, onClose, mapRef, mapElement
     ))}
   </div>
 </div>
-
-
-
 
 
         </div>

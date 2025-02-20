@@ -447,6 +447,8 @@ import { fetchSchool, createSchool, updateSchool } from "../services/schoolServi
 import MapSelect from "./MapSelect";
 import NotificationModal from "../modals/NotificationModal";
 
+import { revalidatePath } from "next/cache";
+
 export default function SchoolSidebar({ isOpen, onClose, mapRef }) {
     if (!isOpen) return null; // ถ้า Sidebar ไม่เปิด ให้คืนค่า null
 
@@ -581,10 +583,7 @@ export default function SchoolSidebar({ isOpen, onClose, mapRef }) {
     //         setAlertMessage(null);
     //       }, 3000);
     //     return;
-    // };
-
-
-
+    // }
 
     const funcSchool = async () => {
         if (!idToken) {
@@ -650,6 +649,7 @@ export default function SchoolSidebar({ isOpen, onClose, mapRef }) {
                 // รีเฟรชข้อมูล school ใหม่
                 fetchData(); // เรียกใช้ฟังก์ชัน fetchData
                 mapRef.current?.refetchData();
+                revalidatePath("/map")
                 return;
             } catch (error) {
                 console.error(error);
@@ -664,6 +664,8 @@ export default function SchoolSidebar({ isOpen, onClose, mapRef }) {
         setTimeout(() => {
             setAlertMessage(null);
         }, 3000);
+
+
         return;
     };
 
@@ -696,16 +698,6 @@ export default function SchoolSidebar({ isOpen, onClose, mapRef }) {
             setIsLoadingData(false); // End loading
         }
     };
-
-    
-
-
-
-
-
-
-
-    
 
 
 

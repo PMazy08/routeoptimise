@@ -92,6 +92,7 @@ const saveTrip = async (idToken, tripData) => {
 };
 
 
+
 const deleteTrip = async (idToken, tripId) => {
   try {
     const response = await fetch(`${configService.baseURL}/api/trips/${tripId}`, {

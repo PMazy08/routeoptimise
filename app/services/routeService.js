@@ -90,7 +90,8 @@ const fetchRoutes = async (idToken, map, data) => {
   
       if (response.ok) {
         const result = await response.json();
-        // console.log("Trips found:", result.trips);
+        console.log("Trips found:", result);
+        console.log("Trips found in ser:"+ JSON.stringify(result, null, 2));
         return result.trips;
       } else {
         console.error(`Failed to fetch trips: ${response.status} ${response.statusText}`);

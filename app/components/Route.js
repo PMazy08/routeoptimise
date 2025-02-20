@@ -6,10 +6,12 @@ import DetailRouteSidebar from "./DetailRoute";
 import { saveTrip } from "../services/tripService";
 import { subscribeAuthState } from "../services/authService"; // Service สำหรับ auth state
 
+import { fetchSchool} from "../services/schoolService";
+
 export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, routes, routeColors, routeDistance, routeDuration, Didu, typePage, route_type, bus_SP, student_inBus}) {
 
-  // console.log("this st bus ja", JSON.stringify(bus_SP, null, 2));
-  console.log("this st bus ja", student_inBus);
+  console.log("route by find: ", JSON.stringify(routes, null, 2));
+  console.log("type ->", route_type);
   
   const [activeComponent, setActiveComponent] = useState("list"); // "list" = หน้ารายการ, "detail" = หน้ารายละเอียด
   const [selectedRoute, setSelectedRoute] = useState(null); // เก็บข้อมูลเส้นทางที่เลือก
@@ -117,61 +119,123 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
   // };
 
 
+  //used normally
+  // const handleSaveTrip = async () => {
+  //   if (!idToken) {
+  //     console.error("No idToken found");
+  //     return;
+  //   }
+  
+  //   setIsLoading(true);
+  
+  //   const formattedRoutes = routes.map((route, index) => ({
+  //     [`route ${index + 1}`]: route,  // แก้ไขให้ route เป็น array ของพิกัดโดยตรง
+  //     color: routeColors[index] || "#000000"  // ใช้สีจาก routeColors หรือค่า default
+  //   }));
+
+  //   const data = await fetchSchool(idToken);
+
+  //   const tripData = {
+  //     school_id: data[0].id,
+  //     types: typePage,
+  //     routes: formattedRoutes
+  //   };
+
+  //   console.log("thiss routes:", JSON.stringify(tripData, null, 2));
+    
+  //     try {
+  //       const result = await saveTrip(idToken, tripData); 
+  //       console.log("Trip saved successfully:", result);
+  //     } catch (error) {
+  //       console.error("Failed to save trip:", error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  // };
+
   const handleSaveTrip = async () => {
     if (!idToken) {
-      console.error("🔴 No idToken found");
+      console.error("No idToken found");
       return;
     }
   
     setIsLoading(true);
   
-
-  const formattedRoutes = routes.map((route, index) => ({
-    [`route ${index + 1}`]: route,  // แก้ไขให้ route เป็น array ของพิกัดโดยตรง
-    color: routeColors[index] || "#000000"  // ใช้สีจาก routeColors หรือค่า default
-  }));
-
-  const tripData = {
-    school_id: 1,
-    types: typePage,
-    routes: formattedRoutes
-  };
-
-    console.log("📌 thiss routes:", JSON.stringify(tripData, null, 2));
+    const formattedRoutes = routes.map((route, index) => ({
+      [`route ${index + 1}`]: route, 
+      color: routeColors[index] || "#000000"  
+    }));
+  
+    const data = await fetchSchool(idToken);
+  
+    const tripData = {
+      school_id: data[0].id,
+      types: typePage,
+      routes: formattedRoutes
+    };
+  
+    console.log("📌 JSON Sent to API:", JSON.stringify(tripData, null, 2));
   
     try {
-      const result = await saveTrip(idToken, tripData); 
-      console.log("🟢 Trip saved successfully:", result);
+      const result = await saveTrip(idToken, tripData);
+      console.log("✅ Trip saved successfully:", result);
     } catch (error) {
-      console.error("🔴 Failed to save trip:", error);
+      console.error("❌ Failed to save trip:", error);
     } finally {
       setIsLoading(false);
     }
   };
+  
+
+
 
 
   // ฟังก์ชันสำหรับดาวน์โหลดไฟล์ CSV
   const downloadFile = () => {
-    // สร้าง CSV จาก routes และ routeColors
-    const csvHeaders = `route_name,latitude,longitude,color,${route_type}\n`;
+    let type = '';
+    if(route_type === "import-home"){
+      type = 'home'
+    }else if (route_type === "import-bus"){
+      type = 'bus'
+    }else{
+      type = route_type;
+    }
+
+
+    const csvHeaders = `route_name,latitude,longitude,color,student_lat,student_lng,${type}\n`;
     const csvRows = [];
 
-    // สร้างข้อมูล CSV โดยใช้ข้อมูลจาก routes และ routeColors
+    // วนลูป routes และ student_bus เพื่อสร้าง CSV
     routes.forEach((route, routeIndex) => {
-      const routeKey = `route ${routeIndex + 1}`;
-      const color = routeColors[routeIndex]; // ใช้สีที่ตรงกับแต่ละ route
+        const routeKey = `route ${routeIndex + 1}`;
+        const studentBusKey = `student_bus`;
+        const color = routeColors[routeIndex] || ""; // ใช้สีของเส้นทาง
 
-      // เพิ่มพิกัดและสีลงใน CSV
-      route[routeKey].forEach(coordinate => {
-        const [latitude, longitude] = coordinate;
-        csvRows.push(`${routeKey},${latitude},${longitude},${color}`);
-      });
+        // หาค่าที่ตรงกันของ student_bus
+        const studentBus = route[studentBusKey] || [];
+        let maxLength = Math.max(route[routeKey].length, studentBus.length);
+
+        // วนลูปเพื่อรวมพิกัดของเส้นทางและนักเรียน
+        for (let i = 0; i < maxLength; i++) {
+            const coordinate = route[routeKey][i] || ["", ""]; // ใช้ค่าเว้นว่างถ้าไม่มีข้อมูล
+            const student = studentBus[i] || ["", ""]; // ใช้ค่าเว้นว่างถ้าไม่มีข้อมูล
+
+            const [latitude, longitude] = coordinate;
+            const [student_lat, student_lng] = student;
+
+            csvRows.push(`${routeKey},${latitude},${longitude},${color},${student_lat},${student_lng}`);
+        }
     });
 
     // รวม header และ rows
     const csvContent = csvHeaders + csvRows.join("\n");
 
-    // สร้าง Blob จากข้อมูล CSV
+    // บันทึกไฟล์ CSV
+    saveCSV(csvContent, `routesData_${type}.csv`);
+  };
+
+  // ฟังก์ชันสำหรับบันทึกไฟล์ CSV
+  const saveCSV = (csvContent, fileName) => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 
     // สร้าง URL สำหรับดาวน์โหลด
@@ -180,16 +244,14 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
     // สร้าง link สำหรับดาวน์โหลด
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'routes_data.csv');
-    
+    link.setAttribute('download', fileName);
+
     // คลิกเพื่อดาวน์โหลด
     link.click();
 
     // ทำลาย URL หลังจากการดาวน์โหลดเสร็จ
     URL.revokeObjectURL(url);
   };
-
-
 
 
 
@@ -264,27 +326,57 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
                         // handleRouteClick(route, index)
                       }}
                     >
-                      <p className="mb-1 text-xs sm:text-sm font-medium">
-                        <strong>Route:</strong> {index + 1} #
-                      </p>
-                      <p className="mb-1 text-xs sm:text-sm">
-                        <strong>Distance:</strong> {diduArray[index].distance} KM
-                      </p>
-                      <p className="text-xs sm:text-sm">
-                        <strong>Time:</strong> {diduArray[index].duration} Min
-                      </p>
-                      <p className="text-xs sm:text-sm">
-                      { route_type === "home" ? (
+                      <div className=" text-xs sm:text-sm font-medium flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-bus-front" viewBox="0 0 16 16">
+                          <path d="M5 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0m8 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m-6-1a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2zm1-6c-1.876 0-3.426.109-4.552.226A.5.5 0 0 0 3 4.723v3.554a.5.5 0 0 0 .448.497C4.574 8.891 6.124 9 8 9s3.426-.109 4.552-.226A.5.5 0 0 0 13 8.277V4.723a.5.5 0 0 0-.448-.497A44 44 0 0 0 8 4m0-1c-1.837 0-3.353.107-4.448.22a.5.5 0 1 1-.104-.994A44 44 0 0 1 8 2c1.876 0 3.426.109 4.552.226a.5.5 0 1 1-.104.994A43 43 0 0 0 8 3"/>
+                          <path d="M15 8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1V2.64c0-1.188-.845-2.232-2.064-2.372A44 44 0 0 0 8 0C5.9 0 4.208.136 3.064.268 1.845.408 1 1.452 1 2.64V4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v3.5c0 .818.393 1.544 1 2v2a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5V14h6v1.5a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-2c.607-.456 1-1.182 1-2zM8 1c2.056 0 3.71.134 4.822.261.676.078 1.178.66 1.178 1.379v8.86a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5V2.64c0-.72.502-1.301 1.178-1.379A43 43 0 0 1 8 1"/>
+                        </svg> 
+                        <p className="ml-2">{index + 1} #</p>
+                      </div>
+                      <div className="text-xs sm:text-sm font-medium flex items-center">
+                        {/* <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-map-fill" viewBox="0 0 16 16">
+                          <path d="M16 .5a.5.5 0 0 0-.598-.49L10.5.99 5.598.01a.5.5 0 0 0-.196 0l-5 1A.5.5 0 0 0 0 1.5v14a.5.5 0 0 0 .598.49l4.902-.98 4.902.98a.5.5 0 0 0 .196 0l5-1A.5.5 0 0 0 16 14.5zM5 14.09V1.11l.5-.1.5.1v12.98l-.402-.08a.5.5 0 0 0-.196 0zm5 .8V1.91l.402.08a.5.5 0 0 0 .196 0L11 1.91v12.98l-.5.1z"/>
+                        </svg> */}
+                        <p className="ml-0"> <strong>Distance: </strong> {diduArray[index].distance} KM</p>
+                      </div>
+                      <div className=" text-xs sm:text-sm font-medium flex items-center">
+                        {/* <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-stopwatch-fill" viewBox="0 0 16 16">
+                          <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07A7.001 7.001 0 0 0 8 16a7 7 0 0 0 5.29-11.584l.013-.012.354-.354.353.354a.5.5 0 1 0 .707-.707l-1.414-1.415a.5.5 0 1 0-.707.707l.354.354-.354.354-.012.012A6.97 6.97 0 0 0 9 2.071V1h.5a.5.5 0 0 0 0-1zm2 5.6V9a.5.5 0 0 1-.5.5H4.5a.5.5 0 0 1 0-1h3V5.6a.5.5 0 1 1 1 0"/>
+                        </svg> */}
+                        <p className="ml-0"><strong>Time: </strong> {diduArray[index].duration} Min</p>
+                      </div>
+                      <div className=" text-xs sm:text-sm font-medium flex items-center">
+                      { route_type === "home" || route_type === "import-home" ? (
                         <>
-                          <strong>Students:</strong> { route[`route ${index + 1}`] ? route[`route ${index + 1}`].length - 2 : 0 }
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-people-fill" viewBox="0 0 16 16">
+                            <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+                          </svg>
+                          <p className="ml-2">{ route[`route ${index + 1}`] ? route[`route ${index + 1}`].length - 2 : 0 }</p>
                         </>
-                      ) : route_type === "bus" ? (
+                      ) : route_type === "bus" || route_type === "import-bus" ? (
                         <>
-                          <strong>Students:</strong> { bus_SP[index] && bus_SP[index][`bus ${index + 1}`] ? bus_SP[index][`bus ${index + 1}`].length : 0 }
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-people-fill" viewBox="0 0 16 16">
+                            <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+                          </svg>
+                          <p className="ml-2">{ route[`student_bus`] ? route[`student_bus`].length : 0 }</p>
+                          {/* <p className="ml-2">{ bus_SP[index] && bus_SP[index][`student_bus ${index + 1}`] ? bus_SP[index][`student_bus ${index + 1}`].length : 0 }</p> */}
                         </>
-                      ) : (
+                      // ) : route_type === "import-home" ? (
+                      //   <>
+                      //     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-people-fill" viewBox="0 0 16 16">
+                      //       <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+                      //     </svg>
+                      //     <p className="ml-2">{ route[`route ${index + 1}`] ? route[`route ${index + 1}`].length - 2 : 0 }</p>
+                      //   </>
+                      // ) : route_type === "import-bus" ? (
+                      //   <>
+                      //     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-people-fill" viewBox="0 0 16 16">
+                      //       <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+                      //     </svg>
+                      //     <p className="ml-2">{ route[`student_bus`] ? route[`student_bus`].length : 0 }</p>
+                      //   </>
+                      ):(
                         <>
-                          <strong>Students:</strong> { route[`route ${index + 1}`] ? route[`route ${index + 1}`].length - 2 : 0 }
                         </>
                       )}
 
@@ -296,33 +388,56 @@ export default function RouteSidebar({ isOpen, openComponent, onClose, mapRef, r
                         } */}
 
                       
-                      </p>
+                      </div>
                     </div>
 
                     {/* ไอคอนลูกศร */}
                     <div
-                        onClick={() =>
-                          route_type === "home"
-                            ? goDetail(
-                                route,
-                                `route ${index + 1}`,
-                                routeColors[index],
-                                false,
-                                diduArray[index].distance,
-                                diduArray[index].duration,
-                                route_type
-                              )
-                            : goDetail(
-                                route,
-                                `route ${index + 1}`,
-                                routeColors[index],
-                                false,
-                                diduArray[index].distance,
-                                diduArray[index].duration,
-                                route_type,
-                                bus_SP[index]
-                              )
-                        }
+                      onClick={() =>
+                        route_type === "home"
+                          ? goDetail(
+                              route,
+                              `route ${index + 1}`,
+                              routeColors[index],
+                              false,
+                              diduArray[index].distance,
+                              diduArray[index].duration,
+                              route_type
+                            )               
+                          : route_type === "bus"
+                          ? goDetail(
+                              route,
+                              `route ${index + 1}`,
+                              routeColors[index],
+                              false,
+                              diduArray[index].distance,
+                              diduArray[index].duration,
+                              route_type,
+                              bus_SP[index]
+                            )
+                          : route_type === "import-home"
+                          ? goDetail(
+                              route,
+                              `route ${index + 1}`,
+                              routeColors[index],
+                              false,
+                              diduArray[index].distance,
+                              diduArray[index].duration,
+                              route_type
+                            )
+                          : route_type === "import-bus"
+                          ? goDetail(
+                              route,
+                              `route ${index + 1}`,
+                              routeColors[index],
+                              false,
+                              diduArray[index].distance,
+                              diduArray[index].duration,
+                              route_type
+                            )
+                          : console.warn("Unknown route_type:", route_type)
+                      }
+
                       className="flex items-center mr-2 sm:mr-4">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
